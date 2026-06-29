@@ -1,0 +1,110 @@
+CHROME WEB STORE — SUBMISSION FIELDS
+=====================================
+
+STORE LISTING
+-------------
+
+Extension name:
+  Shared Browser
+
+Summary (132 chars max):
+  Browse the web together in real-time with live cursors, chat, annotations, and synchronized navigation.
+
+Detailed description:
+  Shared Browser lets you and your friends or colleagues browse the web at the same time — in the same virtual room.
+
+  FEATURES
+  - Synchronized navigation: when the leader navigates, everyone follows (Follow Mode). Members can also browse freely (Free Mode) or split the view (Group Mode).
+  - Live cursors: see where everyone is pointing on the page in real time.
+  - Shared chat: text messages appear instantly for all room members.
+  - Annotations: highlight text, draw on pages, and place sticky notes that all members can see and delete.
+  - Reactions: send emoji reactions visible to the whole room.
+  - Shared history: see which URLs each member has visited during the session.
+  - Presence panel: see who is in the room, their current URL, and their role (Leader / Member).
+  - Simple join flow: share a link like b.krl.kr/ROOMCODE — anyone who clicks it and has the extension joins automatically.
+  - Leave at any time with one click.
+
+  GETTING STARTED
+  1. Click the Shared Browser icon in your toolbar.
+  2. Enter your name and click "Start Session".
+  3. Copy the invite link and send it to others.
+  4. Anyone who clicks the link and has the extension installed joins your session instantly.
+
+  No account or login required. Sessions are end-to-end relayed through a WebSocket server at b.krl.kr.
+
+Category:
+  Productivity
+
+Language:
+  English (United States)
+
+
+PRIVACY PRACTICES
+-----------------
+
+Single purpose description:
+  This extension enables real-time collaborative web browsing by connecting users in shared sessions through a WebSocket server. Its single purpose is to synchronize browsing activity, cursor positions, chat, and page annotations among a group of users.
+
+Does your extension collect any user data?
+  Yes
+
+Data collected and how it is used:
+
+  1. Personally Identifiable Information — Name
+     - What is collected: The display name the user enters when creating or joining a session.
+     - How it is used: Shown to other session members to identify who is in the room. Not stored on the server after the session ends.
+     - Is it shared with third parties? No.
+     - Is it used for a purpose unrelated to the extension's single purpose? No.
+
+  2. Website content — Page URLs and tab titles
+     - What is collected: The URL and title of the active tab, sent to the session server so other members can see where the user is browsing.
+     - How it is used: Displayed in the members list and session history inside the extension sidebar. Not stored persistently on the server after the session ends.
+     - Is it shared with third parties? No.
+     - Is it used for a purpose unrelated to the extension's single purpose? No.
+
+  3. User activity — Chat messages and annotations
+     - What is collected: Chat messages typed by the user, highlighted text, drawings, and sticky notes placed on pages.
+     - How it is used: Broadcast to all session members in real time and held in server memory for the duration of the session. Discarded when the session ends.
+     - Is it shared with third parties? No.
+     - Is it used for a purpose unrelated to the extension's single purpose? No.
+
+  4. User activity — Cursor position
+     - What is collected: Mouse X/Y coordinates on the current page, sampled while the user moves the cursor.
+     - How it is used: Shown as a live cursor overlay to other session members so they can see where the user is pointing. Not stored.
+     - Is it shared with third parties? No.
+     - Is it used for a purpose unrelated to the extension's single purpose? No.
+
+Is any of the above data transmitted to a server you control?
+  Yes. All session data (name, URLs, chat, annotations, cursor positions) is relayed through the WebSocket server at b.krl.kr, which is operated by the developer. Data is held in memory for the duration of the session only and is not written to a database.
+
+Does the extension use remote code?
+  No. All JavaScript is bundled inside the extension package. The extension communicates with b.krl.kr only via a raw WebSocket connection (JSON messages); it does not load or execute any remote scripts.
+
+
+PERMISSION JUSTIFICATIONS
+--------------------------
+
+tabs
+  Required to query the currently active tab so the extension can read its URL and title, navigate to the leader's URL in Follow Mode, and send messages to the content script running in that tab.
+
+activeTab
+  Required to interact with the page the user is currently viewing — injecting the sidebar, reading the URL for session synchronization, and forwarding navigation events to the session.
+
+storage
+  Required to persist the user's display name across popup opens (chrome.storage.local) and to keep session state alive across page navigations during an active session (chrome.storage.session).
+
+scripting
+  Required to programmatically inject the content script into the active tab when the user starts or joins a session, ensuring the sidebar and cursor overlay are present on any page.
+
+sidePanel
+  Required to open and control the Chrome Side Panel, which hosts the session sidebar (members list, chat, annotations). The panel is opened by the user via the popup; it never opens automatically.
+
+host permissions  (<all_urls>)
+  Required because users can browse any website during a shared session. The content script must run on all URLs to relay navigation events, render live cursors, and display annotations regardless of which site the user visits.
+
+
+CONTACT
+-------
+
+Developer email: davideom0414@gmail.com
+Website: https://b.krl.kr
