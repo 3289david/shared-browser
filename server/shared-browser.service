@@ -1,0 +1,22 @@
+# systemd service for Shared Browser server
+# Copy to: /etc/systemd/system/shared-browser.service
+# Then: systemctl enable shared-browser && systemctl start shared-browser
+
+[Unit]
+Description=Shared Browser WebSocket Server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/shared-browser/server
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=5
+Environment=PORT=3001
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=shared-browser
+
+[Install]
+WantedBy=multi-user.target

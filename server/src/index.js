@@ -12,49 +12,45 @@ app.use(express.json());
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 
-// rooms: Map<roomId, Room>
-// Room: { mode, leader, users: Map<socketId, User>, annotations, chat, history, splitUsers: Set }
+// ---- Session state ----
 const rooms = new Map();
 
 const COLORS = ['#3B82F6','#EF4444','#10B981','#F59E0B','#8B5CF6','#EC4899','#06B6D4','#84CC16'];
 
 function uid() { return crypto.randomBytes(4).toString('hex'); }
-function roomId() {
+
+function genRoomId() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let id = '';
   const arr = new Uint8Array(6);
   crypto.getRandomValues(arr);
-  arr.forEach(b => { id += chars[b % chars.length]; });
-  return id;
+  return Array.from(arr, b => chars[b % chars.length]).join('');
 }
 
-// Send JSON to a single client
-function send(ws, type, data) {
+function send(ws, type, data = {}) {
   if (ws.readyState !== ws.OPEN) return;
   ws.send(JSON.stringify({ type, ...data }));
 }
 
-// Broadcast to all in room except optional excluded socket
-function broadcast(roomId, type, data, exclude = null) {
+function broadcast(roomId, type, data = {}, exclude = null) {
   const room = rooms.get(roomId);
   if (!room) return;
   const msg = JSON.stringify({ type, ...data });
-  for (const [, user] of room.users) {
+  for (const user of room.users.values()) {
     if (user.ws !== exclude && user.ws.readyState === user.ws.OPEN) {
       user.ws.send(msg);
     }
   }
 }
 
-// Broadcast to everyone including sender
-function broadcastAll(roomId, type, data) {
+function broadcastAll(roomId, type, data = {}) {
   broadcast(roomId, type, data, null);
 }
 
-function roomPublicState(room) {
+function publicRoom(room) {
   return {
     mode: room.mode,
     leader: room.leader,
+    state: room.state,
     users: Array.from(room.users.values()).map(u => ({
       id: u.id, name: u.name, color: u.color,
       currentUrl: u.currentUrl, permission: u.permission,
@@ -65,9 +61,11 @@ function roomPublicState(room) {
   };
 }
 
-wss.on('connection', (ws) => {
+// ---- WebSocket handler ----
+
+wss.on('connection', (ws, req) => {
+  const userId = uid();
   let currentRoomId = null;
-  let userId = uid();
   let userName = null;
   let userColor = null;
 
@@ -77,18 +75,19 @@ wss.on('connection', (ws) => {
     const { type, ...data } = msg;
 
     switch (type) {
+
       case 'create': {
-        const id = roomId();
-        const color = COLORS[0];
+        const id = genRoomId();
         userName = (data.name || 'User').slice(0, 30);
-        userColor = color;
+        userColor = COLORS[0];
 
         rooms.set(id, {
           mode: data.mode || 'follow',
           leader: userId,
+          state: { url: null, scroll: { x: 0, y: 0 } },
           users: new Map([[userId, {
-            id: userId, ws, name: userName, color,
-            currentUrl: null, permission: 'control', cursor: null,
+            id: userId, ws, name: userName, color: userColor,
+            currentUrl: null, permission: 'control',
           }]]),
           annotations: [],
           chat: [],
@@ -99,38 +98,37 @@ wss.on('connection', (ws) => {
         currentRoomId = id;
         send(ws, 'created', {
           roomId: id,
-          user: { id: userId, name: userName, color, permission: 'control' },
-          room: roomPublicState(rooms.get(id)),
+          user: { id: userId, name: userName, color: userColor, permission: 'control' },
+          room: publicRoom(rooms.get(id)),
         });
-        console.log(`[${id}] Created by ${userName}`);
+        console.log(`[${id}] Created by "${userName}"`);
         break;
       }
 
       case 'join': {
-        const roomIdUpper = (data.roomId || '').toUpperCase().trim();
-        const room = rooms.get(roomIdUpper);
-        if (!room) { send(ws, 'error', { message: 'Session not found' }); return; }
+        const id = (data.roomId || '').toUpperCase().trim();
+        const room = rooms.get(id);
+        if (!room) { send(ws, 'error', { message: 'Session not found. Check your room code.' }); return; }
 
-        const color = COLORS[room.users.size % COLORS.length];
         userName = (data.name || 'User').slice(0, 30);
-        userColor = color;
+        userColor = COLORS[room.users.size % COLORS.length];
 
-        const user = { id: userId, ws, name: userName, color, currentUrl: null, permission: 'view', cursor: null };
-        room.users.set(userId, user);
-        currentRoomId = roomIdUpper;
+        room.users.set(userId, {
+          id: userId, ws, name: userName, color: userColor,
+          currentUrl: null, permission: 'view',
+        });
+        currentRoomId = id;
 
-        // Tell everyone else
-        broadcast(roomIdUpper, 'user_joined', {
-          user: { id: userId, name: userName, color, permission: 'view' },
+        broadcast(id, 'user_joined', {
+          user: { id: userId, name: userName, color: userColor, permission: 'view' },
         }, ws);
 
-        // Send full state to joiner
         send(ws, 'joined', {
-          roomId: roomIdUpper,
-          user: { id: userId, name: userName, color, permission: 'view' },
-          room: roomPublicState(room),
+          roomId: id,
+          user: { id: userId, name: userName, color: userColor, permission: 'view' },
+          room: publicRoom(room),
         });
-        console.log(`[${roomIdUpper}] ${userName} joined`);
+        console.log(`[${id}] "${userName}" joined (${room.users.size} total)`);
         break;
       }
 
@@ -139,30 +137,17 @@ wss.on('connection', (ws) => {
         if (!room) return;
         const user = room.users.get(userId);
         if (!user) return;
-        user.currentUrl = data.url;
 
-        const entry = { userId, userName, url: data.url, title: data.title, timestamp: Date.now() };
-        room.history.push(entry);
+        user.currentUrl = data.url;
+        room.history.push({ userId, userName, url: data.url, title: data.title, timestamp: Date.now() });
         if (room.history.length > 500) room.history.shift();
 
-        if (room.mode === 'follow' && room.leader === userId) {
-          room.state = { url: data.url, scroll: data.scroll };
-          broadcast(currentRoomId, 'navigate', { url: data.url, title: data.title, scroll: data.scroll }, ws);
-        } else if (room.mode === 'group') {
-          room.state = { url: data.url, scroll: data.scroll };
+        if ((room.mode === 'follow' && room.leader === userId) || room.mode === 'group') {
+          room.state = { url: data.url, scroll: data.scroll || { x: 0, y: 0 } };
           broadcast(currentRoomId, 'navigate', { url: data.url, title: data.title, scroll: data.scroll }, ws);
         } else {
-          broadcast(currentRoomId, 'user_navigated', { userId, url: data.url, title: data.title }, ws);
+          broadcast(currentRoomId, 'user_navigated', { userId, userName, url: data.url, title: data.title }, ws);
         }
-        break;
-      }
-
-      case 'cursor': {
-        if (!currentRoomId || !userName) return;
-        broadcast(currentRoomId, 'cursor', {
-          userId, name: userName, color: userColor,
-          x: data.x, y: data.y, scrollX: data.scrollX, scrollY: data.scrollY,
-        }, ws);
         break;
       }
 
@@ -170,8 +155,18 @@ wss.on('connection', (ws) => {
         const room = rooms.get(currentRoomId);
         if (!room) return;
         if (room.mode === 'follow' && room.leader === userId) {
+          room.state.scroll = { x: data.x, y: data.y };
           broadcast(currentRoomId, 'scroll', { x: data.x, y: data.y }, ws);
         }
+        break;
+      }
+
+      case 'cursor': {
+        if (!currentRoomId) return;
+        broadcast(currentRoomId, 'cursor', {
+          userId, name: userName, color: userColor,
+          x: data.x, y: data.y, scrollX: data.scrollX, scrollY: data.scrollY,
+        }, ws);
         break;
       }
 
@@ -191,7 +186,8 @@ wss.on('connection', (ws) => {
       case 'reaction': {
         if (!currentRoomId) return;
         broadcastAll(currentRoomId, 'reaction', {
-          emoji: data.emoji, userId, userName, color: userColor, x: data.x, y: data.y,
+          emoji: data.emoji, userId, userName, color: userColor,
+          x: data.x, y: data.y,
         });
         break;
       }
@@ -200,7 +196,8 @@ wss.on('connection', (ws) => {
         const room = rooms.get(currentRoomId);
         if (!room) return;
         const annotation = {
-          ...data.annotation, id: uid(), userId, userName, color: userColor, timestamp: Date.now(),
+          ...data.annotation,
+          id: uid(), userId, userName, color: userColor, timestamp: Date.now(),
         };
         room.annotations.push(annotation);
         broadcastAll(currentRoomId, 'annotation_added', { annotation });
@@ -229,6 +226,7 @@ wss.on('connection', (ws) => {
         const target = room.users.get(data.userId);
         if (!target) return;
         room.leader = data.userId;
+        target.permission = 'control';
         broadcastAll(currentRoomId, 'leader_changed', { userId: data.userId, userName: target.name });
         break;
       }
@@ -256,9 +254,7 @@ wss.on('connection', (ws) => {
         if (!room) return;
         room.splitUsers.delete(userId);
         broadcast(currentRoomId, 'user_merged', { userId, userName }, ws);
-        if (room.state?.url) {
-          send(ws, 'navigate', { url: room.state.url, scroll: room.state.scroll });
-        }
+        if (room.state?.url) send(ws, 'navigate', { url: room.state.url, scroll: room.state.scroll });
         break;
       }
 
@@ -266,9 +262,7 @@ wss.on('connection', (ws) => {
         const room = rooms.get(currentRoomId);
         if (!room) return;
         const target = room.users.get(data.userId);
-        if (target?.currentUrl) {
-          send(ws, 'navigate', { url: target.currentUrl });
-        }
+        if (target?.currentUrl) send(ws, 'navigate', { url: target.currentUrl });
         break;
       }
 
@@ -292,7 +286,6 @@ wss.on('connection', (ws) => {
       return;
     }
 
-    // Reassign leader if needed
     if (room.leader === userId) {
       const newLeaderId = room.users.keys().next().value;
       room.leader = newLeaderId;
@@ -301,14 +294,18 @@ wss.on('connection', (ws) => {
       broadcastAll(currentRoomId, 'leader_changed', { userId: newLeaderId, userName: newLeader.name });
     }
 
-    broadcast(currentRoomId, 'user_left', { userId, userName }, null);
-    console.log(`[${currentRoomId}] ${userName} left`);
+    broadcast(currentRoomId, 'user_left', { userId, userName });
+    console.log(`[${currentRoomId}] "${userName}" left (${room.users.size} remaining)`);
   });
 
   ws.on('error', () => {});
 });
 
-app.get('/health', (_, res) => res.json({ status: 'ok', rooms: rooms.size }));
+// ---- HTTP API routes (no static file serving - landing page is on GitHub Pages) ----
+
+app.get('/health', (_, res) => {
+  res.json({ status: 'ok', rooms: rooms.size, uptime: Math.floor(process.uptime()) });
+});
 
 app.get('/session/:roomId', (req, res) => {
   const room = rooms.get(req.params.roomId.toUpperCase());
@@ -316,5 +313,9 @@ app.get('/session/:roomId', (req, res) => {
   res.json({ exists: true, mode: room.mode, userCount: room.users.size });
 });
 
+// ---- Start ----
+
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => console.log(`Shared Browser server on port ${PORT}`));
+server.listen(PORT, () => {
+  console.log(`Shared Browser server on port ${PORT}`);
+});
