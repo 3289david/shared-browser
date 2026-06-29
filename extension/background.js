@@ -1,6 +1,6 @@
 // Service worker - coordinates tab events and session state
-const SERVER_URL = 'wss://api.b.krl.kr';
-const SERVER_HTTP = 'https://api.b.krl.kr';
+const SERVER_URL = 'wss://b.krl.kr';
+const SERVER_HTTP = 'https://b.krl.kr';
 
 let sessionState = {
   active: false,

@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const { WebSocketServer } = require('ws');
 const cors = require('cors');
 const crypto = require('crypto');
@@ -8,6 +9,10 @@ const crypto = require('crypto');
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve static landing page from ../docs
+const DOCS = path.resolve(__dirname, '../../docs');
+app.use(express.static(DOCS));
 
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
@@ -301,7 +306,7 @@ wss.on('connection', (ws, req) => {
   ws.on('error', () => {});
 });
 
-// ---- HTTP API routes (no static file serving - landing page is on GitHub Pages) ----
+// ---- HTTP API ----
 
 app.get('/health', (_, res) => {
   res.json({ status: 'ok', rooms: rooms.size, uptime: Math.floor(process.uptime()) });
@@ -313,9 +318,12 @@ app.get('/session/:roomId', (req, res) => {
   res.json({ exists: true, mode: room.mode, userCount: room.users.size });
 });
 
+// All other routes → index.html (handles /ROOMCODE join links)
+app.get('*', (_, res) => {
+  res.sendFile(path.join(DOCS, 'index.html'));
+});
+
 // ---- Start ----
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`Shared Browser server on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Shared Browser on port ${PORT}`));

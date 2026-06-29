@@ -1,4 +1,4 @@
-const SERVER_HTTP = 'https://api.b.krl.kr';
+const SERVER_HTTP = 'https://b.krl.kr';
 
 const viewIdle = document.getElementById('view-idle');
 const viewActive = document.getElementById('view-active');

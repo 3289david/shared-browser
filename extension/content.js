@@ -5,9 +5,9 @@
   if (window.__sharedBrowserInjected) return;
   window.__sharedBrowserInjected = true;
 
-  // ---- Config (change SERVER_WS to your deployed server) ----
-  const SERVER_WS = 'wss://api.b.krl.kr';
-  const JOIN_HOSTS = ['b.krl.kr', '3289david.github.io'];
+  // ---- Config ----
+  const SERVER_WS = 'wss://b.krl.kr';
+  const JOIN_HOSTS = ['b.krl.kr'];
 
   // ---- State ----
   let ws = null;

@@ -392,32 +392,107 @@
     </div>
   </section>
 
-  <!-- Install -->
+  <!-- Download / Install -->
   <section class="install-section" id="install">
     <div class="container">
-      <h2>Start browsing together today</h2>
+      <h2>Get Shared Browser</h2>
       <p>Free to install. No account required to start a session.</p>
-      <div class="install-buttons">
-        <a href="https://chrome.google.com/webstore" target="_blank" class="install-btn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-          </svg>
-          Chrome Web Store
-        </a>
-        <a href="https://addons.mozilla.org" target="_blank" class="install-btn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-          </svg>
-          Firefox Add-ons
-        </a>
-        <a href="https://microsoftedge.microsoft.com/addons" target="_blank" class="install-btn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-          </svg>
-          Edge Add-ons
-        </a>
+
+      <div class="download-grid">
+        <!-- Chrome -->
+        <div class="download-card">
+          <div class="download-icon">
+            <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="12" fill="#4285F4"/>
+              <circle cx="24" cy="24" r="6" fill="white"/>
+              <path d="M24 12 L44 12 A20 20 0 0 1 34 29.7 Z" fill="#EA4335"/>
+              <path d="M24 12 L4 12 A20 20 0 0 0 14 29.7 Z" fill="#FBBC04"/>
+              <path d="M14 29.7 A20 20 0 0 0 34 29.7 L28.4 20.2 A12 12 0 0 1 19.6 20.2 Z" fill="#34A853"/>
+            </svg>
+          </div>
+          <h3>Chrome</h3>
+          <p>Chrome 109+ required</p>
+          <a href="https://github.com/3289david/shared-browser/releases/latest/download/shared-browser-chrome.zip" class="btn btn-primary download-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download .zip
+          </a>
+          <p class="download-sub">Load unpacked in <code>chrome://extensions</code></p>
+        </div>
+
+        <!-- Firefox -->
+        <div class="download-card">
+          <div class="download-icon">
+            <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="20" fill="#FF7139"/>
+              <circle cx="24" cy="24" r="10" fill="#FF9500"/>
+              <circle cx="24" cy="24" r="5" fill="#FFCB00"/>
+            </svg>
+          </div>
+          <h3>Firefox</h3>
+          <p>Firefox 109+ required</p>
+          <a href="https://github.com/3289david/shared-browser/releases/latest/download/shared-browser-firefox.zip" class="btn btn-primary download-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download .zip
+          </a>
+          <p class="download-sub">Load via <code>about:debugging</code></p>
+        </div>
+
+        <!-- Edge -->
+        <div class="download-card">
+          <div class="download-icon">
+            <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="20" fill="#0078D4"/>
+              <path d="M10 28 Q12 18 24 16 Q32 15 36 22 Q28 20 22 26 Q18 30 20 36 Q14 34 10 28Z" fill="#50E6FF"/>
+            </svg>
+          </div>
+          <h3>Edge</h3>
+          <p>Same as Chrome extension</p>
+          <a href="https://github.com/3289david/shared-browser/releases/latest/download/shared-browser-chrome.zip" class="btn btn-primary download-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download .zip
+          </a>
+          <p class="download-sub">Load unpacked in <code>edge://extensions</code></p>
+        </div>
       </div>
-      <p class="install-note">Or <a href="https://github.com/3289david/shared-browser/releases">download the source</a> and load it unpacked in developer mode.</p>
+
+      <div class="install-steps">
+        <h3>How to install</h3>
+        <div class="steps-grid">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">Download the .zip for your browser and extract it</div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Open your browser's extensions page and enable Developer Mode</div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">Click "Load unpacked" and select the extracted folder</div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text">Click the extension icon, enter your name, and start a session</div>
+          </div>
+        </div>
+      </div>
+
+      <p class="install-note">
+        Source code on <a href="https://github.com/3289david/shared-browser" target="_blank">GitHub</a>.
+        Star the repo if you find it useful.
+      </p>
     </div>
   </section>
 
