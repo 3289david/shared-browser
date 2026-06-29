@@ -8,7 +8,7 @@
 
   // ── Config ────────────────────────────────────────────────────────────────
   const WS_URL = 'wss://b.krl.kr/ws';
-  function setHTML(el, html) { el.replaceChildren(document.createRange().createContextualFragment(html)); }
+  function setHTML(el, html) { const b = new DOMParser().parseFromString(html, 'text/html').body; el.replaceChildren(...Array.from(b.childNodes)); }
 
   // ── State (ephemeral, per-page) ───────────────────────────────────────────
   let ws = null;

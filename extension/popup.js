@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-function setHTML(el, html) { el.replaceChildren(document.createRange().createContextualFragment(html)); }
+function setHTML(el, html) { const b = new DOMParser().parseFromString(html, 'text/html').body; el.replaceChildren(...Array.from(b.childNodes)); }
 const viewIdle    = $('view-idle');
 const viewActive  = $('view-active');
 const nameInput   = $('name-input');

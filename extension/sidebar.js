@@ -2,7 +2,7 @@
   'use strict';
 
   const COLORS = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#22c55e','#14b8a6','#ef4444','#3b82f6'];
-  function setHTML(el, html) { el.replaceChildren(document.createRange().createContextualFragment(html)); }
+  function setHTML(el, html) { const b = new DOMParser().parseFromString(html, 'text/html').body; el.replaceChildren(...Array.from(b.childNodes)); }
   function initials(n) { return (n||'?').charAt(0).toUpperCase(); }
   function colorFor(id) { if (!id) return COLORS[0]; let h=0; for (const c of id) h=(h*31+c.charCodeAt(0))>>>0; return COLORS[h%COLORS.length]; }
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
