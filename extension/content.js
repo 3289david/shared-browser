@@ -21,6 +21,7 @@
   let sidebarEl = null;
   let cursorOverlay = null;
   let cursorThrottle = null;
+  let mouseTracking = false;
 
   // ── WebSocket ─────────────────────────────────────────────────────────────
   function wsConnect(onOpen) {
@@ -59,21 +60,27 @@
     switch (msg.type) {
 
       case 'created':
-        bg('SESSION_CONFIRMED', {
+        // Wait for background to confirm before updating sidebar so roomId is set
+        chrome.runtime.sendMessage({
+          type: 'SESSION_CONFIRMED',
           sessionUpdates: { roomId: msg.roomId, userId: msg.user.id, pendingCreate: false, leader: msg.user.id, isLeader: true },
           user: msg.user, room: msg.room,
+        }, () => {
+          sessionState = { ...sessionState, roomId: msg.roomId, userId: msg.user.id, isLeader: true };
+          toSidebar({ type: 'SERVER_MSG', msg });
         });
-        toSidebar({ type: 'SERVER_MSG', msg });
-        // Report current URL
         setTimeout(() => wsSend('navigate', { url: location.href, title: document.title, scroll: {x:scrollX, y:scrollY} }), 200);
         break;
 
       case 'joined':
-        bg('SESSION_CONFIRMED', {
+        chrome.runtime.sendMessage({
+          type: 'SESSION_CONFIRMED',
           sessionUpdates: { roomId: msg.roomId, userId: msg.user.id, pendingJoin: false, isLeader: msg.room.leader === msg.user.id },
           user: msg.user, room: msg.room,
+        }, () => {
+          sessionState = { ...sessionState, roomId: msg.roomId, userId: msg.user.id };
+          toSidebar({ type: 'SERVER_MSG', msg });
         });
-        toSidebar({ type: 'SERVER_MSG', msg });
         // Navigate to leader's page if in follow mode
         if (msg.room.mode === 'follow' && msg.room.state?.url && msg.room.state.url !== location.href) {
           location.href = msg.room.state.url;
@@ -402,6 +409,8 @@
 
   // ── Mouse tracking ────────────────────────────────────────────────────────
   function trackMouse() {
+    if (mouseTracking) return;
+    mouseTracking = true;
     document.addEventListener('mousemove', e => {
       if (!sessionState?.active || cursorThrottle) return;
       cursorThrottle = setTimeout(() => {
@@ -517,6 +526,7 @@
 
       case 'SESSION_CHANGED':
         sessionState = msg.state.session;
+        toSidebar({ type: 'SESSION_CHANGED', state: msg.state });
         break;
       case 'SESSION_ENDED':
         sessionState = null;
@@ -641,7 +651,7 @@
 
   // ── Utils ─────────────────────────────────────────────────────────────────
   function bg(type, data = {}) {
-    chrome.runtime.sendMessage({ type, ...data }).catch(() => {});
+    try { chrome.runtime.sendMessage({ type, ...data }, () => void chrome.runtime.lastError); } catch {}
   }
 
   function esc(s) {

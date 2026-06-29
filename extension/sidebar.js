@@ -269,6 +269,11 @@
 
     switch (type) {
 
+      case 'SESSION_CHANGED':
+        state = { ...state, ...e.data.state };
+        applyState();
+        break;
+
       case 'LIVE_CHAT':
         state.chat = [...(state.chat || []), e.data.message];
         addMsgEl(e.data.message);
@@ -309,10 +314,13 @@
           state.splitUsers = (state.splitUsers || []).filter(id => id !== msg.userId);
           updateSplitBtn();
         } else if (msg.type === 'created' || msg.type === 'joined') {
-          // Full state refresh
-          chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
-            if (res) { state = res; applyState(); }
-          });
+          // SESSION_CHANGED will arrive from content.js with full state — no extra fetch needed
+          // but do a fallback refresh in case it races
+          setTimeout(() => {
+            chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
+              if (res?.session?.active) { state = res; applyState(); }
+            });
+          }, 150);
         }
         break;
       }
