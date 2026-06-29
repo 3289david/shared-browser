@@ -311,17 +311,15 @@ window.addEventListener('message', (event) => {
     case 'SERVER_EVENT': {
       const { event: ev, data } = event.data;
 
-      if (ev === 'user_joined' || ev === 'user_left') {
-        if (session) {
-          if (ev === 'user_joined') {
-            if (!session.members.find(m => m.id === data.user.id)) {
-              session.members.push(data.user);
-            }
-          } else {
-            session.members = session.members.filter(m => m.id !== data.userId);
-          }
-          renderMembers();
-        }
+      if (ev === 'user_joined' && session) {
+        const u = data.user || data;
+        if (u && !session.members.find(m => m.id === u.id)) session.members.push(u);
+        renderMembers();
+      }
+
+      if (ev === 'user_left' && session) {
+        session.members = session.members.filter(m => m.id !== (data.userId || data.id));
+        renderMembers();
       }
 
       if (ev === 'mode_changed' && session) {
@@ -338,17 +336,17 @@ window.addEventListener('message', (event) => {
       if (ev === 'user_navigated' && session) {
         const member = session.members.find(m => m.id === data.userId);
         if (member) { member.currentUrl = data.url; renderMembers(); }
-        history.push({ ...data, timestamp: Date.now() });
+        history.push({ userId: data.userId, userName: data.userName || '?', url: data.url, timestamp: Date.now() });
         renderHistory();
       }
 
       if (ev === 'annotation_added') {
-        annotations.push(data);
+        annotations.push(data.annotation || data);
         renderAnnotations();
       }
 
       if (ev === 'annotation_removed') {
-        annotations = annotations.filter(a => a.id !== data.id);
+        annotations = annotations.filter(a => a.id !== (data.id));
         renderAnnotations();
       }
       break;

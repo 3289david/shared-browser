@@ -176,7 +176,7 @@ function leaveSession() {
 
 function copyInviteLink() {
   if (!currentSession) return;
-  const link = `https://b.krl.kr/join/${currentSession.roomId}`;
+  const link = `https://b.krl.kr/${currentSession.roomId}`;
   navigator.clipboard.writeText(link).then(() => {
     copyLinkBtn.textContent = 'Copied!';
     setTimeout(() => { copyLinkBtn.textContent = 'Copy invite link'; }, 2000);

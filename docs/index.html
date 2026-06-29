@@ -36,7 +36,7 @@
         <a href="#features">Features</a>
         <a href="#modes">Modes</a>
         <a href="#pricing">Pricing</a>
-        <a href="https://github.com/danwoo/shared-browser" target="_blank">GitHub</a>
+        <a href="https://github.com/3289david/shared-browser" target="_blank">GitHub</a>
       </div>
       <a href="#install" class="btn btn-primary nav-cta">Install Free</a>
     </div>
@@ -417,7 +417,7 @@
           Edge Add-ons
         </a>
       </div>
-      <p class="install-note">Or <a href="https://github.com/danwoo/shared-browser/releases">download the source</a> and load it unpacked in developer mode.</p>
+      <p class="install-note">Or <a href="https://github.com/3289david/shared-browser/releases">download the source</a> and load it unpacked in developer mode.</p>
     </div>
   </section>
 
@@ -448,9 +448,9 @@
         </div>
         <div class="footer-col">
           <h4>Resources</h4>
-          <a href="https://github.com/danwoo/shared-browser">GitHub</a>
-          <a href="https://github.com/danwoo/shared-browser/issues">Report a bug</a>
-          <a href="https://github.com/danwoo/shared-browser/wiki">Documentation</a>
+          <a href="https://github.com/3289david/shared-browser">GitHub</a>
+          <a href="https://github.com/3289david/shared-browser/issues">Report a bug</a>
+          <a href="https://github.com/3289david/shared-browser/wiki">Documentation</a>
         </div>
         <div class="footer-col">
           <h4>Contact</h4>
@@ -463,6 +463,68 @@
       <p>2026 Shared Browser. Open source under MIT License.</p>
     </div>
   </footer>
+
+  <!-- Join overlay - shown when visiting b.krl.kr/ROOMCODE -->
+  <div id="join-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(6,6,18,0.93); backdrop-filter:blur(10px); align-items:center; justify-content:center;">
+    <div style="background:#12122b; border:1px solid #2d2d44; border-radius:20px; padding:44px 48px; width:420px; max-width:95vw; text-align:center; box-shadow:0 32px 100px rgba(0,0,0,0.7);">
+      <div style="width:64px;height:64px;margin:0 auto 24px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:16px;display:flex;align-items:center;justify-content:center;">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="white" stroke-width="2"/>
+          <circle cx="8.5" cy="10.5" r="2" fill="white"/>
+          <circle cx="15.5" cy="10.5" r="2" fill="white"/>
+          <path d="M8 15.5 Q12 18 16 15.5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+      <div style="font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Shared Browser</div>
+      <h1 style="font-size:26px;font-weight:800;color:#fff;margin-bottom:10px;font-family:system-ui">You've been invited</h1>
+      <p style="font-size:15px;color:#7879a1;margin-bottom:10px;line-height:1.6;font-family:system-ui">
+        Join session
+      </p>
+      <div id="join-room-code" style="font-family:monospace;font-size:28px;font-weight:900;letter-spacing:6px;color:#a5b4fc;background:rgba(99,102,241,.12);padding:10px 20px;border-radius:10px;margin-bottom:28px;display:inline-block;border:1px solid rgba(99,102,241,.25)"></div>
+
+      <!-- Extension installed: show name input -->
+      <div id="join-form-section">
+        <input id="join-name-input" type="text" placeholder="Enter your name to join" maxlength="30"
+          style="width:100%;padding:14px 16px;background:#0f0f1a;border:1px solid #2d2d44;border-radius:10px;color:#e2e8f0;font-size:15px;outline:none;margin-bottom:12px;box-sizing:border-box;font-family:system-ui;text-align:center;"
+          onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#2d2d44'"
+        />
+        <button id="join-action-btn"
+          style="width:100%;padding:15px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:10px;color:white;font-size:16px;font-weight:700;cursor:pointer;font-family:system-ui;box-shadow:0 4px 20px rgba(99,102,241,.4);"
+          onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'"
+        >Join Session</button>
+        <p id="join-status-msg" style="color:#f87171;font-size:13px;margin-top:8px;font-family:system-ui;display:none"></p>
+      </div>
+
+      <!-- Extension not installed: show install prompt -->
+      <div id="join-install-section" style="display:none">
+        <p style="font-size:14px;color:#94a3b8;margin-bottom:20px;font-family:system-ui;line-height:1.6">
+          Install the Shared Browser extension to join this session. It's free and takes 30 seconds.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <a href="https://chrome.google.com/webstore" target="_blank"
+            style="display:flex;align-items:center;justify-content:center;gap:10px;padding:13px;background:#1e293b;border:1px solid #334155;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;font-weight:600;font-family:system-ui;transition:border-color .2s"
+            onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='#334155'"
+          >
+            Install on Chrome
+          </a>
+          <a href="https://addons.mozilla.org" target="_blank"
+            style="display:flex;align-items:center;justify-content:center;gap:10px;padding:13px;background:#1e293b;border:1px solid #334155;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;font-weight:600;font-family:system-ui;transition:border-color .2s"
+            onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='#334155'"
+          >
+            Install on Firefox
+          </a>
+        </div>
+        <p style="font-size:12px;color:#475569;margin-top:16px;font-family:system-ui">
+          After installing, visit this link again to auto-join.
+        </p>
+      </div>
+
+      <button onclick="document.getElementById('join-overlay').style.display='none'"
+        style="background:none;border:none;color:#475569;font-size:13px;cursor:pointer;margin-top:20px;font-family:system-ui;">
+        Close
+      </button>
+    </div>
+  </div>
 
   <script src="js/main.js"></script>
 </body>

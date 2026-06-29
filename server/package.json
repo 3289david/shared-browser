@@ -1,7 +1,7 @@
 {
   "name": "shared-browser-server",
   "version": "1.0.0",
-  "description": "Real-time server for Shared Browser",
+  "description": "Real-time WebSocket server for Shared Browser",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "socket.io": "^4.7.2",
+    "ws": "^8.16.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1"
   },

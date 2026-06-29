@@ -4,7 +4,8 @@ Browse the web together in real-time.
 
 Not screen sharing. Not a video call overlay. The actual browsing experience, synchronized between participants.
 
-**Website:** https://b.krl.kr
+**Website:** https://b.krl.kr  
+**GitHub:** https://github.com/3289david/shared-browser
 
 ## What it does
 

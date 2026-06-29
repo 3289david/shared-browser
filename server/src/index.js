@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
+const { WebSocketServer } = require('ws');
 const cors = require('cors');
 const crypto = require('crypto');
 
@@ -10,316 +10,311 @@ app.use(cors());
 app.use(express.json());
 
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] },
-  pingTimeout: 60000,
-  pingInterval: 25000,
-});
+const wss = new WebSocketServer({ server, path: '/ws' });
 
-// roomId -> { mode, leader, users: Map<socketId, user>, state, annotations, chat, history }
+// rooms: Map<roomId, Room>
+// Room: { mode, leader, users: Map<socketId, User>, annotations, chat, history, splitUsers: Set }
 const rooms = new Map();
 
-function generateRoomId() {
-  return crypto.randomBytes(3).toString('hex').toUpperCase();
+const COLORS = ['#3B82F6','#EF4444','#10B981','#F59E0B','#8B5CF6','#EC4899','#06B6D4','#84CC16'];
+
+function uid() { return crypto.randomBytes(4).toString('hex'); }
+function roomId() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let id = '';
+  const arr = new Uint8Array(6);
+  crypto.getRandomValues(arr);
+  arr.forEach(b => { id += chars[b % chars.length]; });
+  return id;
 }
 
-function getRoom(roomId) {
-  return rooms.get(roomId);
+// Send JSON to a single client
+function send(ws, type, data) {
+  if (ws.readyState !== ws.OPEN) return;
+  ws.send(JSON.stringify({ type, ...data }));
 }
 
-function getRoomPublicState(room) {
+// Broadcast to all in room except optional excluded socket
+function broadcast(roomId, type, data, exclude = null) {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  const msg = JSON.stringify({ type, ...data });
+  for (const [, user] of room.users) {
+    if (user.ws !== exclude && user.ws.readyState === user.ws.OPEN) {
+      user.ws.send(msg);
+    }
+  }
+}
+
+// Broadcast to everyone including sender
+function broadcastAll(roomId, type, data) {
+  broadcast(roomId, type, data, null);
+}
+
+function roomPublicState(room) {
   return {
     mode: room.mode,
     leader: room.leader,
     users: Array.from(room.users.values()).map(u => ({
-      id: u.id,
-      name: u.name,
-      color: u.color,
-      currentUrl: u.currentUrl,
-      permission: u.permission,
+      id: u.id, name: u.name, color: u.color,
+      currentUrl: u.currentUrl, permission: u.permission,
     })),
-    state: room.state,
     annotations: room.annotations,
     history: room.history.slice(-50),
+    chat: room.chat.slice(-100),
   };
 }
 
-const USER_COLORS = [
-  '#3B82F6', '#EF4444', '#10B981', '#F59E0B',
-  '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16',
-];
-
-io.on('connection', (socket) => {
+wss.on('connection', (ws) => {
   let currentRoomId = null;
-  let currentUser = null;
+  let userId = uid();
+  let userName = null;
+  let userColor = null;
 
-  // Create a new session
-  socket.on('create_session', ({ name, mode }, callback) => {
-    const roomId = generateRoomId();
-    const colorIndex = 0;
+  ws.on('message', (raw) => {
+    let msg;
+    try { msg = JSON.parse(raw); } catch { return; }
+    const { type, ...data } = msg;
 
-    currentUser = {
-      id: socket.id,
-      name: name || 'User',
-      color: USER_COLORS[colorIndex],
-      currentUrl: null,
-      permission: 'control',
-      cursor: null,
-    };
+    switch (type) {
+      case 'create': {
+        const id = roomId();
+        const color = COLORS[0];
+        userName = (data.name || 'User').slice(0, 30);
+        userColor = color;
 
-    rooms.set(roomId, {
-      mode: mode || 'follow',
-      leader: socket.id,
-      users: new Map([[socket.id, currentUser]]),
-      state: { url: null, scroll: { x: 0, y: 0 }, inputStates: {} },
-      annotations: [],
-      chat: [],
-      history: [],
-      splitUsers: new Map(),
-    });
+        rooms.set(id, {
+          mode: data.mode || 'follow',
+          leader: userId,
+          users: new Map([[userId, {
+            id: userId, ws, name: userName, color,
+            currentUrl: null, permission: 'control', cursor: null,
+          }]]),
+          annotations: [],
+          chat: [],
+          history: [],
+          splitUsers: new Set(),
+        });
 
-    currentRoomId = roomId;
-    socket.join(roomId);
+        currentRoomId = id;
+        send(ws, 'created', {
+          roomId: id,
+          user: { id: userId, name: userName, color, permission: 'control' },
+          room: roomPublicState(rooms.get(id)),
+        });
+        console.log(`[${id}] Created by ${userName}`);
+        break;
+      }
 
-    callback({ success: true, roomId, user: currentUser });
-    console.log(`Room ${roomId} created by ${name}`);
-  });
+      case 'join': {
+        const roomIdUpper = (data.roomId || '').toUpperCase().trim();
+        const room = rooms.get(roomIdUpper);
+        if (!room) { send(ws, 'error', { message: 'Session not found' }); return; }
 
-  // Join an existing session
-  socket.on('join_session', ({ roomId, name }, callback) => {
-    const room = getRoom(roomId);
-    if (!room) {
-      callback({ success: false, error: 'Session not found' });
-      return;
+        const color = COLORS[room.users.size % COLORS.length];
+        userName = (data.name || 'User').slice(0, 30);
+        userColor = color;
+
+        const user = { id: userId, ws, name: userName, color, currentUrl: null, permission: 'view', cursor: null };
+        room.users.set(userId, user);
+        currentRoomId = roomIdUpper;
+
+        // Tell everyone else
+        broadcast(roomIdUpper, 'user_joined', {
+          user: { id: userId, name: userName, color, permission: 'view' },
+        }, ws);
+
+        // Send full state to joiner
+        send(ws, 'joined', {
+          roomId: roomIdUpper,
+          user: { id: userId, name: userName, color, permission: 'view' },
+          room: roomPublicState(room),
+        });
+        console.log(`[${roomIdUpper}] ${userName} joined`);
+        break;
+      }
+
+      case 'navigate': {
+        const room = rooms.get(currentRoomId);
+        if (!room) return;
+        const user = room.users.get(userId);
+        if (!user) return;
+        user.currentUrl = data.url;
+
+        const entry = { userId, userName, url: data.url, title: data.title, timestamp: Date.now() };
+        room.history.push(entry);
+        if (room.history.length > 500) room.history.shift();
+
+        if (room.mode === 'follow' && room.leader === userId) {
+          room.state = { url: data.url, scroll: data.scroll };
+          broadcast(currentRoomId, 'navigate', { url: data.url, title: data.title, scroll: data.scroll }, ws);
+        } else if (room.mode === 'group') {
+          room.state = { url: data.url, scroll: data.scroll };
+          broadcast(currentRoomId, 'navigate', { url: data.url, title: data.title, scroll: data.scroll }, ws);
+        } else {
+          broadcast(currentRoomId, 'user_navigated', { userId, url: data.url, title: data.title }, ws);
+        }
+        break;
+      }
+
+      case 'cursor': {
+        if (!currentRoomId || !userName) return;
+        broadcast(currentRoomId, 'cursor', {
+          userId, name: userName, color: userColor,
+          x: data.x, y: data.y, scrollX: data.scrollX, scrollY: data.scrollY,
+        }, ws);
+        break;
+      }
+
+      case 'scroll': {
+        const room = rooms.get(currentRoomId);
+        if (!room) return;
+        if (room.mode === 'follow' && room.leader === userId) {
+          broadcast(currentRoomId, 'scroll', { x: data.x, y: data.y }, ws);
+        }
+        break;
+      }
+
+      case 'chat': {
+        const room = rooms.get(currentRoomId);
+        if (!room || !data.text?.trim()) return;
+        const message = {
+          id: uid(), userId, userName, color: userColor,
+          text: data.text.trim().slice(0, 1000), timestamp: Date.now(),
+        };
+        room.chat.push(message);
+        if (room.chat.length > 500) room.chat.shift();
+        broadcastAll(currentRoomId, 'chat', message);
+        break;
+      }
+
+      case 'reaction': {
+        if (!currentRoomId) return;
+        broadcastAll(currentRoomId, 'reaction', {
+          emoji: data.emoji, userId, userName, color: userColor, x: data.x, y: data.y,
+        });
+        break;
+      }
+
+      case 'annotation_add': {
+        const room = rooms.get(currentRoomId);
+        if (!room) return;
+        const annotation = {
+          ...data.annotation, id: uid(), userId, userName, color: userColor, timestamp: Date.now(),
+        };
+        room.annotations.push(annotation);
+        broadcastAll(currentRoomId, 'annotation_added', { annotation });
+        break;
+      }
+
+      case 'annotation_remove': {
+        const room = rooms.get(currentRoomId);
+        if (!room) return;
+        room.annotations = room.annotations.filter(a => a.id !== data.id);
+        broadcastAll(currentRoomId, 'annotation_removed', { id: data.id });
+        break;
+      }
+
+      case 'set_mode': {
+        const room = rooms.get(currentRoomId);
+        if (!room || room.leader !== userId) return;
+        room.mode = data.mode;
+        broadcastAll(currentRoomId, 'mode_changed', { mode: data.mode, by: userName });
+        break;
+      }
+
+      case 'set_leader': {
+        const room = rooms.get(currentRoomId);
+        if (!room || room.leader !== userId) return;
+        const target = room.users.get(data.userId);
+        if (!target) return;
+        room.leader = data.userId;
+        broadcastAll(currentRoomId, 'leader_changed', { userId: data.userId, userName: target.name });
+        break;
+      }
+
+      case 'set_permission': {
+        const room = rooms.get(currentRoomId);
+        if (!room || room.leader !== userId) return;
+        const target = room.users.get(data.userId);
+        if (!target) return;
+        target.permission = data.permission;
+        broadcastAll(currentRoomId, 'permission_changed', { userId: data.userId, permission: data.permission });
+        break;
+      }
+
+      case 'split': {
+        const room = rooms.get(currentRoomId);
+        if (!room) return;
+        room.splitUsers.add(userId);
+        broadcast(currentRoomId, 'user_split', { userId, userName }, ws);
+        break;
+      }
+
+      case 'merge': {
+        const room = rooms.get(currentRoomId);
+        if (!room) return;
+        room.splitUsers.delete(userId);
+        broadcast(currentRoomId, 'user_merged', { userId, userName }, ws);
+        if (room.state?.url) {
+          send(ws, 'navigate', { url: room.state.url, scroll: room.state.scroll });
+        }
+        break;
+      }
+
+      case 'jump_to': {
+        const room = rooms.get(currentRoomId);
+        if (!room) return;
+        const target = room.users.get(data.userId);
+        if (target?.currentUrl) {
+          send(ws, 'navigate', { url: target.currentUrl });
+        }
+        break;
+      }
+
+      case 'ping':
+        send(ws, 'pong');
+        break;
     }
-
-    const colorIndex = room.users.size % USER_COLORS.length;
-    currentUser = {
-      id: socket.id,
-      name: name || 'User',
-      color: USER_COLORS[colorIndex],
-      currentUrl: null,
-      permission: 'view',
-      cursor: null,
-    };
-
-    room.users.set(socket.id, currentUser);
-    currentRoomId = roomId;
-    socket.join(roomId);
-
-    socket.to(roomId).emit('user_joined', { user: currentUser });
-    callback({ success: true, roomId, user: currentUser, room: getRoomPublicState(room) });
-    console.log(`${name} joined room ${roomId}`);
   });
 
-  // URL navigation event
-  socket.on('navigate', ({ url, title, scroll }) => {
-    const room = getRoom(currentRoomId);
-    if (!room || !currentUser) return;
-
-    currentUser.currentUrl = url;
-    room.users.set(socket.id, currentUser);
-
-    const historyEntry = { userId: socket.id, userName: currentUser.name, url, title, timestamp: Date.now() };
-    room.history.push(historyEntry);
-    if (room.history.length > 200) room.history.shift();
-
-    if (room.mode === 'follow' && room.leader === socket.id) {
-      room.state.url = url;
-      room.state.scroll = scroll || { x: 0, y: 0 };
-      socket.to(currentRoomId).emit('leader_navigated', { url, title, scroll });
-    } else if (room.mode === 'group') {
-      room.state.url = url;
-      socket.to(currentRoomId).emit('group_navigated', { url, title, userId: socket.id });
-    } else {
-      socket.to(currentRoomId).emit('user_navigated', { userId: socket.id, url, title });
-    }
-  });
-
-  // Cursor position sync
-  socket.on('cursor_move', ({ x, y, scrollX, scrollY }) => {
-    if (!currentRoomId || !currentUser) return;
-    const room = getRoom(currentRoomId);
+  ws.on('close', () => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
     if (!room) return;
 
-    currentUser.cursor = { x, y, scrollX, scrollY };
-    socket.to(currentRoomId).emit('cursor_update', {
-      userId: socket.id,
-      name: currentUser.name,
-      color: currentUser.color,
-      x, y, scrollX, scrollY,
-    });
-  });
-
-  // Scroll sync
-  socket.on('scroll', ({ x, y }) => {
-    const room = getRoom(currentRoomId);
-    if (!room || !currentUser) return;
-
-    if (room.mode === 'follow' && room.leader === socket.id) {
-      room.state.scroll = { x, y };
-      socket.to(currentRoomId).emit('scroll_sync', { x, y });
-    }
-  });
-
-  // Add annotation (highlight, sticky note, drawing)
-  socket.on('add_annotation', (annotation) => {
-    const room = getRoom(currentRoomId);
-    if (!room || !currentUser) return;
-
-    const entry = {
-      ...annotation,
-      id: crypto.randomBytes(8).toString('hex'),
-      userId: socket.id,
-      userName: currentUser.name,
-      color: currentUser.color,
-      timestamp: Date.now(),
-    };
-    room.annotations.push(entry);
-    io.to(currentRoomId).emit('annotation_added', entry);
-  });
-
-  // Remove annotation
-  socket.on('remove_annotation', ({ id }) => {
-    const room = getRoom(currentRoomId);
-    if (!room) return;
-    room.annotations = room.annotations.filter(a => a.id !== id);
-    io.to(currentRoomId).emit('annotation_removed', { id });
-  });
-
-  // Chat message
-  socket.on('chat_message', ({ text }) => {
-    const room = getRoom(currentRoomId);
-    if (!room || !currentUser || !text.trim()) return;
-
-    const message = {
-      id: crypto.randomBytes(8).toString('hex'),
-      userId: socket.id,
-      userName: currentUser.name,
-      color: currentUser.color,
-      text: text.trim().slice(0, 1000),
-      timestamp: Date.now(),
-    };
-    room.chat.push(message);
-    if (room.chat.length > 500) room.chat.shift();
-    io.to(currentRoomId).emit('chat_message', message);
-  });
-
-  // Reaction
-  socket.on('reaction', ({ emoji, x, y }) => {
-    if (!currentRoomId || !currentUser) return;
-    io.to(currentRoomId).emit('reaction', {
-      emoji,
-      x, y,
-      userId: socket.id,
-      userName: currentUser.name,
-      color: currentUser.color,
-    });
-  });
-
-  // Change session mode
-  socket.on('set_mode', ({ mode }) => {
-    const room = getRoom(currentRoomId);
-    if (!room || room.leader !== socket.id) return;
-    room.mode = mode;
-    io.to(currentRoomId).emit('mode_changed', { mode, by: currentUser.name });
-  });
-
-  // Transfer leadership
-  socket.on('set_leader', ({ userId }) => {
-    const room = getRoom(currentRoomId);
-    if (!room || room.leader !== socket.id) return;
-    if (!room.users.has(userId)) return;
-    room.leader = userId;
-    const newLeader = room.users.get(userId);
-    io.to(currentRoomId).emit('leader_changed', { userId, userName: newLeader.name });
-  });
-
-  // Set user permission
-  socket.on('set_permission', ({ userId, permission }) => {
-    const room = getRoom(currentRoomId);
-    if (!room || room.leader !== socket.id) return;
-    const user = room.users.get(userId);
-    if (!user) return;
-    user.permission = permission;
-    room.users.set(userId, user);
-    io.to(currentRoomId).emit('permission_changed', { userId, permission });
-  });
-
-  // Split browsing - user goes independent temporarily
-  socket.on('split', () => {
-    const room = getRoom(currentRoomId);
-    if (!room || !currentUser) return;
-    room.splitUsers.set(socket.id, true);
-    socket.to(currentRoomId).emit('user_split', { userId: socket.id, userName: currentUser.name });
-  });
-
-  // Merge back to group
-  socket.on('merge', () => {
-    const room = getRoom(currentRoomId);
-    if (!room || !currentUser) return;
-    room.splitUsers.delete(socket.id);
-    socket.to(currentRoomId).emit('user_merged', { userId: socket.id, userName: currentUser.name });
-    // Send current group state to re-joining user
-    socket.emit('merge_state', { url: room.state.url, scroll: room.state.scroll });
-  });
-
-  // Jump to another user's page
-  socket.on('jump_to_user', ({ userId }) => {
-    const room = getRoom(currentRoomId);
-    if (!room) return;
-    const targetUser = room.users.get(userId);
-    if (!targetUser) return;
-    socket.emit('jump', { url: targetUser.currentUrl, userName: targetUser.name });
-  });
-
-  // Get chat history
-  socket.on('get_chat_history', (callback) => {
-    const room = getRoom(currentRoomId);
-    if (!room) return;
-    callback(room.chat.slice(-100));
-  });
-
-  // Disconnect
-  socket.on('disconnect', () => {
-    if (!currentRoomId || !currentUser) return;
-    const room = getRoom(currentRoomId);
-    if (!room) return;
-
-    room.users.delete(socket.id);
-    room.splitUsers.delete(socket.id);
+    room.users.delete(userId);
+    room.splitUsers.delete(userId);
 
     if (room.users.size === 0) {
       rooms.delete(currentRoomId);
-      console.log(`Room ${currentRoomId} closed`);
+      console.log(`[${currentRoomId}] Closed (empty)`);
       return;
     }
 
-    // If leader left, assign new leader
-    if (room.leader === socket.id) {
+    // Reassign leader if needed
+    if (room.leader === userId) {
       const newLeaderId = room.users.keys().next().value;
       room.leader = newLeaderId;
       const newLeader = room.users.get(newLeaderId);
       newLeader.permission = 'control';
-      io.to(currentRoomId).emit('leader_changed', { userId: newLeaderId, userName: newLeader.name });
+      broadcastAll(currentRoomId, 'leader_changed', { userId: newLeaderId, userName: newLeader.name });
     }
 
-    socket.to(currentRoomId).emit('user_left', { userId: socket.id, userName: currentUser.name });
-    console.log(`${currentUser.name} left room ${currentRoomId}`);
+    broadcast(currentRoomId, 'user_left', { userId, userName }, null);
+    console.log(`[${currentRoomId}] ${userName} left`);
   });
+
+  ws.on('error', () => {});
 });
 
-// Health check
 app.get('/health', (_, res) => res.json({ status: 'ok', rooms: rooms.size }));
 
-// Session info (no sensitive data)
 app.get('/session/:roomId', (req, res) => {
-  const room = getRoom(req.params.roomId.toUpperCase());
+  const room = rooms.get(req.params.roomId.toUpperCase());
   if (!room) return res.status(404).json({ error: 'Session not found' });
   res.json({ exists: true, mode: room.mode, userCount: room.users.size });
 });
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`Shared Browser server running on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Shared Browser server on port ${PORT}`));
