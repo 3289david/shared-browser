@@ -43,6 +43,20 @@
   chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
     if (res) state = res;
     applyState();
+    // If session active but roomId not confirmed yet (server hasn't responded),
+    // poll background every 400ms until we have it — max 15s
+    if (state.session?.active && !state.session?.roomId) {
+      const t = setInterval(() => {
+        chrome.runtime.sendMessage({ type: 'GET_STATE' }, r => {
+          if (r?.session?.roomId) {
+            state = r;
+            applyState();
+            clearInterval(t);
+          }
+        });
+      }, 400);
+      setTimeout(() => clearInterval(t), 15000);
+    }
   });
 
   function applyState() {

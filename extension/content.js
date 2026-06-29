@@ -175,6 +175,12 @@
     const iframe = document.createElement('iframe');
     iframe.src = chrome.runtime.getURL('sidebar.html');
     iframe.style.cssText = 'width:100%;height:100%;border:none;pointer-events:all;box-shadow:-2px 0 20px rgba(0,0,0,.25);';
+    // Push full state once the iframe has loaded so it never shows stale ------
+    iframe.addEventListener('load', () => {
+      chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
+        if (res) toSidebar({ type: 'SESSION_CHANGED', state: res });
+      });
+    });
     wrap.appendChild(iframe);
     document.documentElement.appendChild(wrap);
     document.documentElement.style.marginRight = '300px';
