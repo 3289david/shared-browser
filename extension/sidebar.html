@@ -6,172 +6,340 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#0d0d1a;--bg2:#13132a;--bg3:#1a1a35;
-  --border:#252545;--text:#e2e8f0;--dim:#8892b0;--muted:#4a5168;
-  --accent:#6366f1;--accent2:#8b5cf6;
+  --bg:#0d0d1a;--bg2:#12122a;--bg3:#1a1a35;
+  --border:#222240;--text:#e2e8f0;--dim:#8892b0;--muted:#3e4460;
+  --accent:#6366f1;--violet:#8b5cf6;--red:#ef4444;--amber:#f59e0b;
+  --green:#22c55e;
 }
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;font-size:13px;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,sans-serif;font-size:13px;display:flex;flex-direction:column;}
 
 /* ── Header ── */
 .hd{
   display:flex;align-items:center;gap:8px;padding:10px 12px;
   background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;
 }
-.hd-logo{width:24px;height:24px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.hd-logo svg{width:14px;height:14px;}
-.hd-title{font-weight:700;font-size:13px;color:#fff;flex:1;}
-.hd-code{font-family:monospace;font-size:11px;color:#a5b4fc;background:rgba(99,102,241,.15);padding:2px 8px;border-radius:4px;cursor:pointer;letter-spacing:1px;border:1px solid rgba(99,102,241,.25);}
-.hd-code:hover{background:rgba(99,102,241,.25);}
+.hd-mark{width:26px;height:26px;background:linear-gradient(135deg,var(--accent),var(--violet));
+  border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hd-mark svg{width:15px;height:15px;}
+.hd-name{font-weight:800;font-size:13px;color:#fff;flex:1;letter-spacing:-.2px;}
 
-/* ── Share row ── */
-.share-row{
-  display:flex;align-items:center;gap:6px;padding:8px 12px;
-  background:rgba(99,102,241,.06);border-bottom:1px solid var(--border);flex-shrink:0;
+/* Room code chip — click to copy link */
+.hd-code{
+  font-family:monospace;font-size:11px;font-weight:700;letter-spacing:1.5px;
+  color:#a5b4fc;background:rgba(99,102,241,.14);
+  padding:3px 9px;border-radius:5px;cursor:pointer;
+  border:1px solid rgba(99,102,241,.22);transition:background .12s;
+  display:flex;align-items:center;gap:4px;
 }
-.share-link{flex:1;font-size:11px;color:#a5b4fc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.copy-btn{padding:4px 10px;background:var(--accent);border:none;border-radius:5px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0;}
-.copy-btn:hover{opacity:.85;}
+.hd-code:hover{background:rgba(99,102,241,.26);}
+.hd-code svg{width:10px;height:10px;opacity:.6;}
+
+/* Leave button — always visible in header */
+.hd-leave{
+  width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;flex-shrink:0;
+  background:rgba(239,68,68,.12);color:#f87171;
+  display:flex;align-items:center;justify-content:center;transition:background .12s;
+}
+.hd-leave:hover{background:rgba(239,68,68,.3);}
+.hd-leave svg{width:14px;height:14px;}
+
+/* ── Share strip ── */
+.share{
+  display:flex;align-items:center;gap:6px;padding:7px 12px;
+  background:rgba(99,102,241,.05);border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.share-url{flex:1;font-size:11px;color:#818cf8;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.share-copy{
+  padding:4px 10px;background:var(--accent);border:none;border-radius:5px;
+  color:#fff;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;transition:opacity .12s;
+}
+.share-copy:hover{opacity:.85;}
 
 /* ── Tabs ── */
 .tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
-.tab{flex:1;padding:8px 2px;border:none;background:none;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;position:relative;transition:color .15s;}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:7px 2px 6px;border:none;background:none;color:var(--dim);
+  font-size:9.5px;font-weight:700;cursor:pointer;
+  text-transform:uppercase;letter-spacing:.06em;position:relative;transition:color .12s;
+}
+.tab svg{width:16px;height:16px;transition:color .12s;}
 .tab.on{color:var(--accent);}
-.tab.on::after{content:'';position:absolute;bottom:0;left:15%;width:70%;height:2px;background:var(--accent);border-radius:2px 2px 0 0;}
-.tab-badge{display:inline-block;width:14px;height:14px;background:var(--accent);color:#fff;border-radius:50%;font-size:9px;line-height:14px;text-align:center;margin-left:3px;}
+.tab.on::after{content:'';position:absolute;bottom:0;left:18%;width:64%;
+  height:2px;background:var(--accent);border-radius:2px 2px 0 0;}
+.tab-dot{
+  position:absolute;top:5px;right:calc(50% - 14px);
+  width:7px;height:7px;background:var(--red);border-radius:50%;
+  border:1.5px solid var(--bg2);display:none;
+}
+.tab-dot.on{display:block;}
 
 /* ── Panels ── */
-.panel{display:none;flex-direction:column;flex:1;overflow:hidden;}
+.panel{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;}
 .panel.on{display:flex;}
 .scroll{overflow-y:auto;flex:1;padding:10px;}
 .scroll::-webkit-scrollbar{width:3px;}
 .scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 
 /* ── People panel ── */
-.mode-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
-.mode-label{font-size:11px;color:var(--dim);}
-.mode-sel{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 6px;border-radius:4px;cursor:pointer;}
-.member{display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;}
-.avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;}
-.member-info{flex:1;min-width:0;}
-.member-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.member-url{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
-.badge{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;}
-.badge-l{background:rgba(99,102,241,.2);color:#a5b4fc;}
-.badge-y{background:rgba(34,197,94,.15);color:#86efac;}
-.icon-btn{width:22px;height:22px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.icon-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
-.icon-btn svg{width:12px;height:12px;}
+.ctrl-bar{
+  display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.ctrl-label{font-size:11px;color:var(--dim);font-weight:600;}
+.mode-sel{
+  background:var(--bg3);border:1px solid var(--border);color:var(--text);
+  font-size:12px;padding:4px 8px;border-radius:6px;cursor:pointer;flex:1;
+}
+.split-btn{
+  padding:4px 10px;border:1px solid var(--border);border-radius:6px;
+  background:var(--bg3);color:var(--dim);font-size:11px;font-weight:700;cursor:pointer;
+  transition:all .12s;
+}
+.split-btn:hover{border-color:var(--amber);color:var(--amber);}
+.split-btn.on{background:rgba(245,158,11,.12);color:#fbbf24;border-color:rgba(245,158,11,.3);}
 
-/* ── Split row ── */
-.split-row{padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:6px;flex-shrink:0;}
-.act-btn{flex:1;padding:7px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;transition:opacity .15s;}
-.act-btn:hover{opacity:.85;}
-.btn-split{background:var(--bg3);color:var(--dim);border:1px solid var(--border);}
-.btn-split.on{background:rgba(245,158,11,.15);color:#fbbf24;border-color:rgba(245,158,11,.3);}
-.btn-leave{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);}
+.member{
+  display:flex;align-items:center;gap:9px;padding:9px 10px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:9px;margin-bottom:6px;
+}
+.av{
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;color:#fff;flex-shrink:0;
+}
+.m-info{flex:1;min-width:0;}
+.m-name{font-weight:700;font-size:13px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.m-url{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+.badge{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:800;}
+.you{background:rgba(34,197,94,.14);color:#86efac;}
+.ldr{background:rgba(99,102,241,.18);color:#a5b4fc;}
+.m-acts{display:flex;gap:4px;flex-shrink:0;}
+.ic{
+  width:24px;height:24px;border:1px solid var(--border);border-radius:5px;
+  background:var(--bg3);color:var(--dim);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .12s;
+}
+.ic:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+.ic svg{width:12px;height:12px;}
+
+/* History within people panel */
+.sec-hd{
+  font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--muted);padding:10px 0 6px;
+}
+.h-item{
+  display:flex;align-items:center;gap:7px;padding:7px 9px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:7px;margin-bottom:5px;
+}
+.h-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.h-body{flex:1;min-width:0;}
+.h-url{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.h-who{font-size:10px;color:var(--muted);margin-top:1px;}
+.h-go{
+  width:22px;height:22px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:5px;color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0;
+}
+.h-go:hover{color:var(--accent);border-color:var(--accent);}
+.h-go svg{width:11px;height:11px;}
 
 /* ── Chat panel ── */
-.messages{overflow-y:auto;flex:1;padding:8px;}
-.messages::-webkit-scrollbar{width:3px;}
-.messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-.msg{margin-bottom:10px;}
-.msg-hd{display:flex;align-items:center;gap:5px;margin-bottom:2px;}
-.msg-av{width:16px;height:16px;border-radius:50%;font-size:8px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.msg-name{font-size:11px;font-weight:600;}
+.msgs{overflow-y:auto;flex:1;padding:10px;}
+.msgs::-webkit-scrollbar{width:3px;}
+.msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.msg{margin-bottom:11px;}
+.msg-hd{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+.msg-av{width:17px;height:17px;border-radius:50%;font-size:8px;font-weight:800;color:#fff;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.msg-name{font-size:11px;font-weight:700;}
 .msg-time{font-size:10px;color:var(--muted);}
-.msg-text{font-size:13px;line-height:1.4;padding-left:21px;word-break:break-word;}
+.msg-body{font-size:13px;line-height:1.45;padding-left:22px;word-break:break-word;color:#d1d5e8;}
 
-.reactions{display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px;border-top:1px solid var(--border);flex-shrink:0;}
-.rxn{padding:3px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-size:16px;cursor:pointer;transition:transform .1s;}
-.rxn:hover{transform:scale(1.3);}
+.rxns{display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px;border-top:1px solid var(--border);flex-shrink:0;}
+.rxn{
+  padding:3px 8px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:7px;font-size:17px;cursor:pointer;transition:transform .1s,border-color .1s;
+}
+.rxn:hover{transform:scale(1.3);border-color:var(--accent);}
 
-.chat-input-area{padding:8px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:6px;align-items:flex-end;}
-.chat-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;resize:none;max-height:80px;min-height:34px;font-family:inherit;line-height:1.4;}
-.chat-input:focus{border-color:var(--accent);}
-.chat-input::placeholder{color:var(--muted);}
-.send-btn{width:32px;height:32px;background:var(--accent);border:none;border-radius:7px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.send-btn:hover{opacity:.85;}
-.send-btn svg{width:13px;height:13px;}
+.chat-bar{
+  padding:8px;border-top:1px solid var(--border);flex-shrink:0;
+  display:flex;gap:6px;align-items:flex-end;
+}
+.chat-in{
+  flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;
+  color:var(--text);padding:8px 11px;font-size:13px;outline:none;
+  resize:none;max-height:80px;min-height:36px;font-family:inherit;line-height:1.4;transition:border-color .12s;
+}
+.chat-in:focus{border-color:var(--accent);}
+.chat-in::placeholder{color:var(--muted);}
+.send{
+  width:34px;height:34px;background:var(--accent);border:none;border-radius:8px;
+  color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:opacity .12s;
+}
+.send:hover{opacity:.85;}
+.send svg{width:13px;height:13px;}
 
-/* ── Tools panel ── */
-.tools-section{padding:10px;border-bottom:1px solid var(--border);}
-.tools-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;}
-.tool-row{display:flex;gap:6px;}
-.tool-btn{flex:1;padding:8px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;color:var(--dim);font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;}
-.tool-btn:hover,.tool-btn.on{border-color:var(--accent);color:#e2e8f0;background:rgba(99,102,241,.1);}
-.tool-btn.on{color:#a5b4fc;}
-.ann-list{padding:8px;}
-.ann-item{display:flex;align-items:flex-start;gap:6px;padding:7px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;margin-bottom:5px;}
-.ann-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+/* ── Annotate panel ── */
+.tool-btns{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;
+  padding:10px 10px 0;flex-shrink:0;
+}
+.tbtn{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:10px 4px;background:var(--bg2);border:1.5px solid var(--border);
+  border-radius:10px;cursor:pointer;transition:all .15s;
+}
+.tbtn:hover{border-color:var(--accent);background:rgba(99,102,241,.08);}
+.tbtn.on{border-color:var(--accent);background:rgba(99,102,241,.14);}
+.tbtn svg{width:20px;height:20px;color:var(--dim);}
+.tbtn.on svg{color:#a5b4fc;}
+.tbtn-lbl{font-size:10px;font-weight:700;color:var(--dim);letter-spacing:.03em;}
+.tbtn.on .tbtn-lbl{color:#a5b4fc;}
+
+/* Sticky note inline form */
+.note-form{
+  margin:8px 10px 0;padding:10px;background:rgba(251,191,36,.06);
+  border:1.5px solid rgba(251,191,36,.2);border-radius:10px;display:none;flex-shrink:0;
+}
+.note-form.on{display:block;}
+.note-in{
+  width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;
+  color:var(--text);padding:8px 10px;font-size:12px;outline:none;resize:none;
+  height:58px;font-family:inherit;line-height:1.4;margin-bottom:7px;transition:border-color .12s;
+}
+.note-in:focus{border-color:var(--amber);}
+.note-in::placeholder{color:var(--muted);}
+.note-add{
+  width:100%;padding:7px;background:var(--amber);border:none;border-radius:7px;
+  color:#000;font-size:12px;font-weight:800;cursor:pointer;transition:opacity .12s;
+}
+.note-add:hover{opacity:.88;}
+
+/* Annotation list */
+.ann-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 10px 5px;flex-shrink:0;
+}
+.ann-hd-txt{font-size:10px;font-weight:800;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--muted);}
+.ann-count{font-size:10px;color:var(--dim);background:var(--bg3);
+  padding:1px 6px;border-radius:3px;font-weight:700;}
+
+.ann-card{
+  display:flex;align-items:flex-start;gap:8px;padding:9px 10px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:9px;margin-bottom:6px;
+  transition:border-color .12s;
+}
+.ann-card:hover{border-color:#2d2d55;}
+.ann-icon{
+  width:28px;height:28px;border-radius:7px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+}
+.ann-icon.hl{background:rgba(250,204,21,.15);}
+.ann-icon.dk{background:rgba(239,68,68,.12);}
+.ann-icon.st{background:rgba(251,191,36,.12);}
 .ann-body{flex:1;min-width:0;}
-.ann-who{font-size:10px;color:var(--muted);margin-bottom:2px;}
-.ann-txt{font-size:12px;color:var(--dim);word-break:break-word;}
-.ann-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;padding:0 2px;}
-.ann-del:hover{color:#f87171;}
-.sticky-form{padding:8px;border-top:1px solid var(--border);}
-.sticky-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 9px;font-size:12px;outline:none;resize:none;height:60px;font-family:inherit;margin-bottom:6px;}
-.sticky-input:focus{border-color:var(--accent);}
-.add-sticky-btn{width:100%;padding:7px;background:var(--accent);border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;}
+.ann-meta{font-size:10px;color:var(--muted);margin-bottom:3px;
+  display:flex;align-items:center;gap:4px;}
+.ann-who{font-weight:700;color:var(--dim);}
+.ann-type-tag{
+  font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.ann-preview{font-size:12px;color:#a0a8c0;line-height:1.35;word-break:break-word;}
+.ann-del{
+  width:28px;height:28px;flex-shrink:0;border:1px solid transparent;border-radius:7px;
+  background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  color:var(--muted);transition:all .12s;
+}
+.ann-del:hover{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.3);color:#f87171;}
+.ann-del svg{width:14px;height:14px;}
 
-/* ── History panel ── */
-.hist-item{display:flex;align-items:center;gap:7px;padding:7px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;margin-bottom:5px;}
-.hist-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-.hist-body{flex:1;min-width:0;}
-.hist-url{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.hist-who{font-size:10px;color:var(--muted);margin-top:1px;}
-.hist-go{width:20px;height:20px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;}
-.hist-go:hover{color:var(--accent);border-color:var(--accent);}
-
-.empty{text-align:center;color:var(--muted);font-size:12px;padding:24px 12px;}
+.empty{text-align:center;color:var(--muted);font-size:12px;padding:28px 12px;line-height:1.6;}
 </style>
 </head>
 <body>
 
 <!-- Header -->
 <div class="hd">
-  <div class="hd-logo">
-    <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="white" stroke-width="2"/><circle cx="8.5" cy="10.5" r="2" fill="white"/><circle cx="15.5" cy="10.5" r="2" fill="white"/><path d="M8 15.5 Q12 18 16 15.5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+  <div class="hd-mark">
+    <svg viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke="white" stroke-width="2"/>
+      <circle cx="8.5" cy="10.5" r="2" fill="white"/>
+      <circle cx="15.5" cy="10.5" r="2" fill="white"/>
+      <path d="M8 15.5 Q12 18 16 15.5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+    </svg>
   </div>
-  <span class="hd-title">Shared Browser</span>
-  <span class="hd-code" id="code-el" title="Click to copy link">------</span>
+  <span class="hd-name">Shared Browser</span>
+  <button class="hd-code" id="code-el" title="Copy invite link">
+    <span id="code-text">------</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    </svg>
+  </button>
+  <button class="hd-leave" id="leave-btn" title="Leave session">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+      <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+  </button>
 </div>
 
-<!-- Share link row -->
-<div class="share-row">
-  <span class="share-link" id="share-link-el">b.krl.kr/------</span>
-  <button class="copy-btn" id="copy-btn">Copy Link</button>
+<!-- Share strip -->
+<div class="share">
+  <span class="share-url" id="share-url">b.krl.kr/------</span>
+  <button class="share-copy" id="copy-btn">Copy Link</button>
 </div>
 
 <!-- Tabs -->
 <div class="tabs">
-  <button class="tab on" data-tab="people">People</button>
-  <button class="tab" data-tab="chat">Chat <span class="tab-badge" id="chat-badge" style="display:none">0</span></button>
-  <button class="tab" data-tab="tools">Tools</button>
-  <button class="tab" data-tab="history">History</button>
+  <button class="tab on" data-tab="people">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+    People
+  </button>
+  <button class="tab" data-tab="chat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    Chat
+    <span class="tab-dot" id="chat-dot"></span>
+  </button>
+  <button class="tab" data-tab="annotate">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+    </svg>
+    Annotate
+  </button>
 </div>
 
-<!-- People panel -->
+<!-- ══ People panel ═══════════════════════════════════════════════════════ -->
 <div class="panel on" id="panel-people">
-  <div class="mode-row">
-    <span class="mode-label">Mode</span>
+  <div class="ctrl-bar">
+    <span class="ctrl-label">Mode</span>
     <select class="mode-sel" id="mode-sel">
-      <option value="follow">Follow</option>
-      <option value="free">Free</option>
+      <option value="follow">Follow leader</option>
+      <option value="free">Free browse</option>
       <option value="group">Group</option>
-      <option value="presentation">Present</option>
+      <option value="presentation">Presentation</option>
     </select>
+    <button class="split-btn" id="split-btn">Split</button>
   </div>
   <div class="scroll" id="members-list"></div>
-  <div class="split-row">
-    <button class="act-btn btn-split" id="split-btn">Split</button>
-    <button class="act-btn btn-leave" id="leave-btn">Leave Session</button>
-  </div>
 </div>
 
-<!-- Chat panel -->
-<div class="panel" id="panel-chat" style="flex-direction:column;">
-  <div class="messages" id="messages"></div>
-  <div class="reactions">
+<!-- ══ Chat panel ══════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-chat">
+  <div class="msgs" id="messages"></div>
+  <div class="rxns">
     <button class="rxn" data-e="👍">👍</button>
     <button class="rxn" data-e="❤️">❤️</button>
     <button class="rxn" data-e="😂">😂</button>
@@ -179,35 +347,55 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     <button class="rxn" data-e="👀">👀</button>
     <button class="rxn" data-e="🎉">🎉</button>
   </div>
-  <div class="chat-input-area">
-    <textarea class="chat-input" id="chat-input" placeholder="Type a message..." rows="1"></textarea>
-    <button class="send-btn" id="send-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+  <div class="chat-bar">
+    <textarea class="chat-in" id="chat-input" placeholder="Message..." rows="1"></textarea>
+    <button class="send" id="send-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
     </button>
   </div>
 </div>
 
-<!-- Tools panel -->
-<div class="panel" id="panel-tools">
-  <div class="tools-section">
-    <div class="tools-title">Annotate</div>
-    <div class="tool-row">
-      <button class="tool-btn" id="tool-highlight">Highlight</button>
-      <button class="tool-btn" id="tool-draw">Draw</button>
-    </div>
+<!-- ══ Annotate panel ════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-annotate">
+  <!-- 3 tool buttons -->
+  <div class="tool-btns">
+    <button class="tbtn" id="tool-highlight">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/>
+      </svg>
+      <span class="tbtn-lbl">Highlight</span>
+    </button>
+    <button class="tbtn" id="tool-draw">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M2 20 L12 4 L22 20"/><line x1="2" y1="20" x2="22" y2="20"/>
+      </svg>
+      <span class="tbtn-lbl" id="draw-lbl">Draw</span>
+    </button>
+    <button class="tbtn" id="tool-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+      <span class="tbtn-lbl">Note</span>
+    </button>
   </div>
-  <div class="sticky-form">
-    <div class="tools-title">Sticky Note</div>
-    <textarea class="sticky-input" id="sticky-text" placeholder="Write a note..."></textarea>
-    <button class="add-sticky-btn" id="add-sticky-btn">Add Note to Page</button>
-  </div>
-  <div class="tools-title" style="padding:8px 10px 4px">Annotations</div>
-  <div class="scroll" id="ann-list"></div>
-</div>
 
-<!-- History panel -->
-<div class="panel" id="panel-history">
-  <div class="scroll" id="history-list"></div>
+  <!-- Inline note form (shown when Note is active) -->
+  <div class="note-form" id="note-form">
+    <textarea class="note-in" id="note-text" placeholder="Type your note..."></textarea>
+    <button class="note-add" id="note-add">Place on page</button>
+  </div>
+
+  <!-- Annotation list -->
+  <div class="ann-hd">
+    <span class="ann-hd-txt">On this page</span>
+    <span class="ann-count" id="ann-count">0</span>
+  </div>
+  <div class="scroll" id="ann-list"></div>
 </div>
 
 <script src="sidebar.js"></script>

@@ -543,9 +543,11 @@
         break;
       case 'ANNOTATION_ADDED':
         renderAnnotation(msg.annotation);
+        toSidebar({ type: 'ANNOTATION_ADDED', annotation: msg.annotation });
         break;
       case 'ANNOTATION_REMOVED':
         document.querySelectorAll(`[data-ann="${msg.id}"]`).forEach(e => e.remove());
+        toSidebar({ type: 'ANNOTATION_REMOVED', id: msg.id });
         break;
       case 'HISTORY_CHANGED':
         toSidebar({ type: 'LIVE_HISTORY', history: msg.history });
