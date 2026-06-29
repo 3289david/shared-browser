@@ -1,0 +1,47 @@
+{
+  "manifest_version": 2,
+  "name": "Shared Browser",
+  "version": "1.0.0",
+  "description": "Browse the web together in real-time. Share sessions, see live cursors, annotate pages, and collaborate without screen sharing.",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "storage",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["background-compat.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "css": ["inject.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Shared Browser"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": ["sidebar.html", "icons/*"],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "shared-browser@b.krl.kr",
+      "strict_min_version": "109.0"
+    }
+  }
+}

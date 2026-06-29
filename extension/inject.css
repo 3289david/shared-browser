@@ -1,0 +1,41 @@
+/* Shared Browser - injected styles */
+
+.sb-cursor-pointer {
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+}
+
+.sb-cursor-label {
+  font-size: 11px;
+  font-family: system-ui, sans-serif;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-top: 2px;
+  white-space: nowrap;
+  font-weight: 500;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.sb-highlight {
+  mix-blend-mode: multiply;
+  transition: opacity 0.2s;
+}
+
+.sb-highlight:hover {
+  opacity: 0.8;
+}
+
+.sb-sticky {
+  font-family: system-ui, sans-serif;
+  line-height: 1.4;
+}
+
+@keyframes sb-float {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-80px) scale(1.3); opacity: 0; }
+}
+
+@keyframes sb-slide-in {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}

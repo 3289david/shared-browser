@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shared Browser - Browse Together, Not Just Side by Side</title>
+  <meta name="description" content="The browser extension that lets you share the web browsing experience itself, not just your screen. Real-time cursors, annotations, chat, and synchronized navigation.">
+  <meta property="og:title" content="Shared Browser - Browse Together">
+  <meta property="og:description" content="Share the actual browsing experience, not a video feed. Live cursors, annotations, synchronized tabs, and real-time chat - all built into your browser.">
+  <meta property="og:url" content="https://b.krl.kr">
+  <link rel="canonical" href="https://b.krl.kr">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="favicon-48.png">
+  <meta name="theme-color" content="#6366f1">
+  <meta property="og:image" content="https://b.krl.kr/og-image.png">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" stroke="white" stroke-width="2"/>
+            <circle cx="8.5" cy="10.5" r="2" fill="white"/>
+            <circle cx="15.5" cy="10.5" r="2" fill="white"/>
+            <path d="M8 15.5 Q12 18 16 15.5" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+        <span>Shared<strong>Browser</strong></span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#modes">Modes</a>
+        <a href="#pricing">Pricing</a>
+        <a href="https://github.com/danwoo/shared-browser" target="_blank">GitHub</a>
+      </div>
+      <a href="#install" class="btn btn-primary nav-cta">Install Free</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">Now available for Chrome, Firefox, and Edge</div>
+      <h1 class="hero-title">
+        Browse the web<br>
+        <span class="gradient-text">together</span>
+      </h1>
+      <p class="hero-sub">
+        Not screen sharing. Not a video call overlay.<br>
+        The actual browsing experience, shared in real-time.
+      </p>
+      <div class="hero-actions">
+        <a href="#install" class="btn btn-primary btn-lg">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Install the Extension
+        </a>
+        <a href="#how" class="btn btn-ghost btn-lg">See how it works</a>
+      </div>
+      <div class="hero-visual">
+        <div class="browser-mock">
+          <div class="browser-bar">
+            <div class="browser-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="browser-url">amazon.com/s?k=running+shoes</div>
+            <div class="session-pill">
+              <div class="session-dot"></div>
+              <span>3 people</span>
+            </div>
+          </div>
+          <div class="browser-content">
+            <!-- Simulated page content -->
+            <div class="page-sim">
+              <div class="page-sim-header"></div>
+              <div class="page-sim-rows">
+                <div class="page-sim-product highlighted">
+                  <div class="page-sim-img"></div>
+                  <div class="page-sim-info">
+                    <div class="page-sim-line wide"></div>
+                    <div class="page-sim-line medium"></div>
+                    <div class="page-sim-line short"></div>
+                  </div>
+                </div>
+                <div class="page-sim-product">
+                  <div class="page-sim-img"></div>
+                  <div class="page-sim-info">
+                    <div class="page-sim-line wide"></div>
+                    <div class="page-sim-line short"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Live cursors -->
+            <div class="cursor-demo" style="left: 35%; top: 38%">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="#3b82f6">
+                <path d="M3 1.5L12.5 7.5L8.5 8.8L6.5 13L3 1.5Z"/>
+              </svg>
+              <div class="cursor-label blue">Alice</div>
+            </div>
+            <div class="cursor-demo" style="left: 58%; top: 55%">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="#10b981">
+                <path d="M3 1.5L12.5 7.5L8.5 8.8L6.5 13L3 1.5Z"/>
+              </svg>
+              <div class="cursor-label green">Bob</div>
+            </div>
+            <!-- Sticky note -->
+            <div class="sticky-demo" style="right: 40px; top: 20px">
+              <div class="sticky-author">Alice</div>
+              Too expensive!
+            </div>
+            <!-- Sidebar preview -->
+            <div class="sidebar-preview">
+              <div class="sidebar-header">Chat</div>
+              <div class="sidebar-msg">
+                <div class="sidebar-avatar blue">A</div>
+                <div class="sidebar-text">
+                  <div class="sidebar-name" style="color:#60a5fa">Alice</div>
+                  I like the blue ones
+                </div>
+              </div>
+              <div class="sidebar-msg">
+                <div class="sidebar-avatar green">B</div>
+                <div class="sidebar-text">
+                  <div class="sidebar-name" style="color:#34d399">Bob</div>
+                  Checking reviews...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Compare: Old vs New -->
+  <section class="compare-section" id="how">
+    <div class="container">
+      <div class="compare-grid">
+        <div class="compare-card old">
+          <div class="compare-label">Before</div>
+          <h3>Screen sharing</h3>
+          <ul class="compare-list">
+            <li class="bad">You watch someone else's screen</li>
+            <li class="bad">Laggy video compression</li>
+            <li class="bad">Can't click or interact yourself</li>
+            <li class="bad">Need a separate call app</li>
+            <li class="bad">Eats bandwidth</li>
+          </ul>
+        </div>
+        <div class="compare-arrow">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </div>
+        <div class="compare-card new">
+          <div class="compare-label">Shared Browser</div>
+          <h3>Shared browsing</h3>
+          <ul class="compare-list">
+            <li class="good">Everyone has full browser access</li>
+            <li class="good">Zero lag - syncs state, not video</li>
+            <li class="good">Everyone can click, scroll, navigate</li>
+            <li class="good">Chat and voice built right in</li>
+            <li class="good">Uses almost no bandwidth</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features-section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <h2>Everything you need to browse together</h2>
+        <p>Built for the way people actually use the web with others.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon" style="background: rgba(99,102,241,0.15); color: #818cf8;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <h3>Live Cursors</h3>
+          <p>See everyone's cursor in real-time, labeled with their name. Like Google Docs, but for the entire web.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background: rgba(16,185,129,0.15); color: #34d399;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+          </div>
+          <h3>Annotations</h3>
+          <p>Highlight text, drop sticky notes, or draw on any page. All annotations are visible to everyone in real-time.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background: rgba(245,158,11,0.15); color: #fbbf24;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <h3>Built-in Chat</h3>
+          <p>Chat sidebar appears on every page. No need to switch between apps while browsing together.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background: rgba(239,68,68,0.15); color: #f87171;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+            </svg>
+          </div>
+          <h3>Shared History</h3>
+          <p>Every page visited during the session is tracked with a timeline. See who went where and when.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background: rgba(139,92,246,0.15); color: #a78bfa;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <h3>Split & Merge</h3>
+          <p>Break off to explore independently, then merge back with one click. No one has to wait.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background: rgba(6,182,212,0.15); color: #22d3ee;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+          </div>
+          <h3>Event Replay</h3>
+          <p>Record your session as events, not video. Tiny file sizes. Scrub through any moment of your browsing session.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Session Modes -->
+  <section class="modes-section" id="modes">
+    <div class="container">
+      <div class="section-header">
+        <h2>Four ways to browse together</h2>
+        <p>Switch modes anytime. The session adapts to what you need right now.</p>
+      </div>
+      <div class="modes-grid">
+        <div class="mode-card">
+          <div class="mode-number">01</div>
+          <h3>Follow Mode</h3>
+          <p>All participants follow the leader's navigation. When the leader moves to a new page, everyone follows automatically. Perfect for walkthroughs, tutorials, and guided research.</p>
+          <div class="mode-tag">Education / Demos</div>
+        </div>
+
+        <div class="mode-card">
+          <div class="mode-number">02</div>
+          <h3>Free Mode</h3>
+          <p>Everyone browses independently. You can see where others are and jump to their page anytime with one click. Great for research where you want to cover more ground.</p>
+          <div class="mode-tag">Research / Exploration</div>
+        </div>
+
+        <div class="mode-card">
+          <div class="mode-number">03</div>
+          <h3>Group Mode</h3>
+          <p>Any navigation by any member moves everyone. Collaborative and equal - no single leader. Best for shopping or trip planning where everyone contributes.</p>
+          <div class="mode-tag">Shopping / Planning</div>
+        </div>
+
+        <div class="mode-card">
+          <div class="mode-number">04</div>
+          <h3>Presentation Mode</h3>
+          <p>Audience follows the presenter only. Audience cannot change the shared view, but can still react, chat, and see each other's cursors on the page.</p>
+          <div class="mode-tag">Presentations / Teaching</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Use Cases -->
+  <section class="use-cases-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Built for real situations</h2>
+      </div>
+      <div class="use-cases-grid">
+        <div class="use-case">
+          <div class="use-case-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            </svg>
+          </div>
+          <h3>Shopping Together</h3>
+          <p>Browse, compare, vote on items, and share carts - all in real-time. No more screenshotting products into group chats.</p>
+        </div>
+
+        <div class="use-case">
+          <div class="use-case-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <h3>Travel Planning</h3>
+          <p>Research hotels, flights, and restaurants together. Annotate pages with "this one!" and build a shared itinerary in real-time.</p>
+        </div>
+
+        <div class="use-case">
+          <div class="use-case-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 12 19.79 19.79 0 0 1 1.96 3.37 2 2 0 0 1 3.92 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          </div>
+          <h3>Remote Support</h3>
+          <p>Help family or colleagues navigate a website. See their cursor, guide them step by step, or take control when needed.</p>
+        </div>
+
+        <div class="use-case">
+          <div class="use-case-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+          </div>
+          <h3>Study Sessions</h3>
+          <p>Read articles, highlight passages, and discuss in real-time. The teacher can lead the session or let students explore freely.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="pricing-section" id="pricing">
+    <div class="container">
+      <div class="section-header">
+        <h2>Simple pricing</h2>
+        <p>Start free. Upgrade when you need more.</p>
+      </div>
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <div class="pricing-tier">Free</div>
+          <div class="pricing-price">$0 <span>/ month</span></div>
+          <ul class="pricing-features">
+            <li>Up to 2 participants</li>
+            <li>1 hour session limit</li>
+            <li>Live cursors</li>
+            <li>Chat</li>
+            <li>Basic annotations</li>
+          </ul>
+          <a href="#install" class="btn btn-ghost btn-block">Get started</a>
+        </div>
+
+        <div class="pricing-card pricing-card-featured">
+          <div class="pricing-popular">Most Popular</div>
+          <div class="pricing-tier">Pro</div>
+          <div class="pricing-price">$8 <span>/ month</span></div>
+          <ul class="pricing-features">
+            <li>Unlimited participants</li>
+            <li>Unlimited session length</li>
+            <li>Session recording</li>
+            <li>Shared history</li>
+            <li>All annotation tools</li>
+            <li>AI session summary</li>
+            <li>Voice chat</li>
+          </ul>
+          <a href="#" class="btn btn-primary btn-block">Start free trial</a>
+        </div>
+
+        <div class="pricing-card">
+          <div class="pricing-tier">Team</div>
+          <div class="pricing-price">$24 <span>/ mo per team</span></div>
+          <ul class="pricing-features">
+            <li>Everything in Pro</li>
+            <li>Shared workspaces</li>
+            <li>Advanced permissions</li>
+            <li>Session export</li>
+            <li>Priority support</li>
+            <li>Custom branding</li>
+          </ul>
+          <a href="mailto:hello@b.krl.kr" class="btn btn-ghost btn-block">Contact sales</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Install -->
+  <section class="install-section" id="install">
+    <div class="container">
+      <h2>Start browsing together today</h2>
+      <p>Free to install. No account required to start a session.</p>
+      <div class="install-buttons">
+        <a href="https://chrome.google.com/webstore" target="_blank" class="install-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+          </svg>
+          Chrome Web Store
+        </a>
+        <a href="https://addons.mozilla.org" target="_blank" class="install-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+          </svg>
+          Firefox Add-ons
+        </a>
+        <a href="https://microsoftedge.microsoft.com/addons" target="_blank" class="install-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+          Edge Add-ons
+        </a>
+      </div>
+      <p class="install-note">Or <a href="https://github.com/danwoo/shared-browser/releases">download the source</a> and load it unpacked in developer mode.</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a href="/" class="nav-logo">
+          <div class="logo-icon small">
+            <svg viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="white" stroke-width="2"/>
+              <circle cx="8.5" cy="10.5" r="2" fill="white"/>
+              <circle cx="15.5" cy="10.5" r="2" fill="white"/>
+              <path d="M8 15.5 Q12 18 16 15.5" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+            </svg>
+          </div>
+          <span>Shared<strong>Browser</strong></span>
+        </a>
+        <p>The browser built for doing things together.</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Product</h4>
+          <a href="#features">Features</a>
+          <a href="#modes">Session Modes</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#install">Install</a>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <a href="https://github.com/danwoo/shared-browser">GitHub</a>
+          <a href="https://github.com/danwoo/shared-browser/issues">Report a bug</a>
+          <a href="https://github.com/danwoo/shared-browser/wiki">Documentation</a>
+        </div>
+        <div class="footer-col">
+          <h4>Contact</h4>
+          <a href="mailto:hello@b.krl.kr">hello@b.krl.kr</a>
+          <a href="https://b.krl.kr">b.krl.kr</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom container">
+      <p>2026 Shared Browser. Open source under MIT License.</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
