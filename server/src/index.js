@@ -144,14 +144,14 @@ wss.on('connection', (ws, req) => {
         if (!user) return;
 
         user.currentUrl = data.url;
-        room.history.push({ userId, userName, url: data.url, title: data.title, timestamp: Date.now() });
+        room.history.push({ userId, userName, color: userColor, url: data.url, title: data.title, timestamp: Date.now() });
         if (room.history.length > 500) room.history.shift();
 
         if ((room.mode === 'follow' && room.leader === userId) || room.mode === 'group') {
           room.state = { url: data.url, scroll: data.scroll || { x: 0, y: 0 } };
           broadcast(currentRoomId, 'navigate', { url: data.url, title: data.title, scroll: data.scroll }, ws);
         } else {
-          broadcast(currentRoomId, 'user_navigated', { userId, userName, url: data.url, title: data.title }, ws);
+          broadcast(currentRoomId, 'user_navigated', { userId, userName, color: userColor, url: data.url, title: data.title }, ws);
         }
         break;
       }

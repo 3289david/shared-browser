@@ -1,397 +1,334 @@
-// Sidebar script - runs inside the sidebar iframe
+(function () {
+  'use strict';
 
-let session = null;
-let annotations = [];
-let history = [];
-let selectedTool = 'highlight';
-let isSplit = false;
-let unreadChat = 0;
-let activeTab = 'people';
+  // ── Color palette (matches server assignment order) ────────────────────────
+  const COLORS = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#22c55e','#14b8a6','#ef4444','#3b82f6'];
+  function initials(name) { return (name || '?').charAt(0).toUpperCase(); }
+  function colorFor(id) { if (!id) return COLORS[0]; let h=0; for (const c of id) h=(h*31+c.charCodeAt(0))>>>0; return COLORS[h%COLORS.length]; }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmtTime(ts) { const d=new Date(ts||Date.now()); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
+  function shortUrl(u) { try { const p=new URL(u); return (p.hostname+p.pathname).replace(/\/$/,'').slice(0,50); } catch { return u?.slice(0,50)||''; } }
 
-const roomIdEl = document.getElementById('room-id');
-const membersContainer = document.getElementById('members-container');
-const modeSelect = document.getElementById('mode-select');
-const splitBtn = document.getElementById('split-btn');
-const mergeBtn = document.getElementById('merge-btn');
-const leaveBtn = document.getElementById('leave-btn');
-const messagesContainer = document.getElementById('messages-container');
-const chatInput = document.getElementById('chat-input');
-const sendBtn = document.getElementById('send-btn');
-const chatBadge = document.getElementById('chat-badge');
-const annotationsContainer = document.getElementById('annotations-container');
-const historyContainer = document.getElementById('history-container');
-const addAnnotationBtn = document.getElementById('add-annotation-btn');
-const stickyModal = document.getElementById('sticky-modal');
-const stickyText = document.getElementById('sticky-text');
-const stickyCancel = document.getElementById('sticky-cancel');
-const stickyOk = document.getElementById('sticky-ok');
+  // ── State ──────────────────────────────────────────────────────────────────
+  let state = { session:null, members:[], chat:[], annotations:[], history:[], splitUsers:[] };
+  let unread = 0;
+  let activeTab = 'people';
+  let drawOn = false;
 
-// Tab switching
-document.querySelectorAll('.sb-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.sb-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.sb-panel').forEach(p => p.classList.remove('active'));
-    tab.classList.add('active');
-    activeTab = tab.dataset.tab;
-    document.getElementById(`panel-${activeTab}`).classList.add('active');
+  // ── DOM refs ───────────────────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  const codeEl       = $('code-el');
+  const shareLinkEl  = $('share-link-el');
+  const copyBtn      = $('copy-btn');
+  const modeSel      = $('mode-sel');
+  const membersList  = $('members-list');
+  const splitBtn     = $('split-btn');
+  const leaveBtn     = $('leave-btn');
+  const messagesEl   = $('messages');
+  const chatInput    = $('chat-input');
+  const sendBtn      = $('send-btn');
+  const chatBadge    = $('chat-badge');
+  const toolHighlight= $('tool-highlight');
+  const toolDraw     = $('tool-draw');
+  const stickyText   = $('sticky-text');
+  const addStickyBtn = $('add-sticky-btn');
+  const annList      = $('ann-list');
+  const historyList  = $('history-list');
 
-    if (activeTab === 'chat') {
-      unreadChat = 0;
-      chatBadge.classList.add('hidden');
-      scrollChat();
+  // ── Init: load state from background ─────────────────────────────────────
+  chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
+    if (res) { state = res; }
+    applyState();
+  });
+
+  function applyState() {
+    const s = state.session;
+    if (!s?.active) return;
+
+    const code = s.roomId || '------';
+    codeEl.textContent = code;
+    shareLinkEl.textContent = `b.krl.kr/${code}`;
+
+    if (s.mode) modeSel.value = s.mode;
+
+    const isSplit = state.splitUsers?.includes(s.userId);
+    splitBtn.classList.toggle('on', !!isSplit);
+    splitBtn.textContent = isSplit ? 'Merge' : 'Split';
+
+    renderMembers(state.members || []);
+    renderAllChat(state.chat || []);
+    renderAnnotations(state.annotations || []);
+    renderHistory(state.history || []);
+  }
+
+  // ── Tabs ───────────────────────────────────────────────────────────────────
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeTab = btn.dataset.tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+      btn.classList.add('on');
+      document.getElementById('panel-' + activeTab)?.classList.add('on');
+      if (activeTab === 'chat') { unread = 0; chatBadge.style.display = 'none'; chatBadge.textContent = '0'; }
+    });
+  });
+
+  // ── Copy link ─────────────────────────────────────────────────────────────
+  function getLink() { return `https://b.krl.kr/${state.session?.roomId || ''}`; }
+
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(getLink()).then(() => {
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => copyBtn.textContent = 'Copy Link', 1500);
+    }).catch(() => {});
+  });
+
+  codeEl.addEventListener('click', () => {
+    navigator.clipboard.writeText(getLink()).then(() => {
+      const old = codeEl.textContent;
+      codeEl.textContent = 'Copied!';
+      setTimeout(() => codeEl.textContent = old, 1200);
+    }).catch(() => {});
+  });
+
+  // ── Mode selector ─────────────────────────────────────────────────────────
+  modeSel.addEventListener('change', () => {
+    toParent('SET_MODE', { mode: modeSel.value });
+  });
+
+  // ── Split / Leave ─────────────────────────────────────────────────────────
+  splitBtn.addEventListener('click', () => {
+    const myId = state.session?.userId;
+    const isSplit = state.splitUsers?.includes(myId);
+    if (isSplit) {
+      toParent('MERGE');
+      state.splitUsers = (state.splitUsers || []).filter(id => id !== myId);
+      splitBtn.classList.remove('on');
+      splitBtn.textContent = 'Split';
+    } else {
+      toParent('SPLIT');
+      if (!state.splitUsers) state.splitUsers = [];
+      if (myId) state.splitUsers.push(myId);
+      splitBtn.classList.add('on');
+      splitBtn.textContent = 'Merge';
     }
   });
-});
 
-// Tool selection
-document.querySelectorAll('.sb-tool-btn[data-tool]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.sb-tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedTool = btn.dataset.tool;
-    updateAddBtn();
+  leaveBtn.addEventListener('click', () => {
+    toParent('LEAVE');
   });
-});
 
-function updateAddBtn() {
-  if (selectedTool === 'highlight') {
-    addAnnotationBtn.textContent = 'Add Selected Text as Highlight';
-  } else if (selectedTool === 'sticky') {
-    addAnnotationBtn.textContent = 'Add Sticky Note to Page';
-  } else {
-    addAnnotationBtn.textContent = 'Start Drawing (click to toggle)';
+  // ── Members ───────────────────────────────────────────────────────────────
+  function renderMembers(members) {
+    if (!members.length) {
+      membersList.innerHTML = '<div class="empty">No one else here yet.<br>Share your link to invite.</div>';
+      return;
+    }
+    const myId = state.session?.userId;
+    const leaderId = state.session?.leader;
+    membersList.innerHTML = members.map(m => {
+      const color = m.color || colorFor(m.id);
+      const isMe = m.id === myId;
+      const isLeader = m.id === leaderId;
+      const url = m.currentUrl ? shortUrl(m.currentUrl) : '';
+      return `<div class="member">
+        <div class="avatar" style="background:${color}">${esc(initials(m.name))}</div>
+        <div class="member-info">
+          <div class="member-name">${esc(m.name)}${isMe?' <span class="badge badge-y">You</span>':''}${isLeader?' <span class="badge badge-l">Leader</span>':''}</div>
+          ${url ? `<div class="member-url" title="${esc(m.currentUrl)}">${esc(url)}</div>` : ''}
+        </div>
+        ${!isMe && state.session?.isLeader ? `<button class="icon-btn" title="Make leader" data-setleader="${esc(m.id)}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </button>` : ''}
+        ${!isMe ? `<button class="icon-btn" title="Jump to their page" data-jumpto="${esc(m.id)}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>` : ''}
+      </div>`;
+    }).join('');
+
+    membersList.querySelectorAll('[data-setleader]').forEach(btn => {
+      btn.addEventListener('click', () => toParent('SET_LEADER', { userId: btn.dataset.setleader }));
+    });
+    membersList.querySelectorAll('[data-jumpto]').forEach(btn => {
+      btn.addEventListener('click', () => toParent('JUMP_TO', { userId: btn.dataset.jumpto }));
+    });
   }
-}
 
-// Add annotation button
-addAnnotationBtn.addEventListener('click', () => {
-  if (selectedTool === 'highlight') {
-    post('ADD_HIGHLIGHT', { note: '', color: userColor() });
-  } else if (selectedTool === 'sticky') {
+  // ── Chat ──────────────────────────────────────────────────────────────────
+  function renderAllChat(msgs) {
+    messagesEl.innerHTML = '';
+    msgs.forEach(addMsgEl);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function addMsgEl(m) {
+    const color = m.color || colorFor(m.userId);
+    const div = document.createElement('div');
+    div.className = 'msg';
+    div.innerHTML = `<div class="msg-hd">
+      <div class="msg-av" style="background:${color}">${esc(initials(m.userName))}</div>
+      <span class="msg-name" style="color:${color}">${esc(m.userName)}</span>
+      <span class="msg-time">${fmtTime(m.timestamp)}</span>
+    </div>
+    <div class="msg-text">${esc(m.text)}</div>`;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function sendChat() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    chatInput.value = '';
+    chatInput.style.height = '';
+    toParent('SEND_CHAT', { text });
+  }
+
+  sendBtn.addEventListener('click', sendChat);
+  chatInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+  });
+  chatInput.addEventListener('input', () => {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 80) + 'px';
+  });
+
+  document.querySelectorAll('.rxn').forEach(btn => {
+    btn.addEventListener('click', () => toParent('REACTION', { emoji: btn.dataset.e }));
+  });
+
+  // ── Tools ─────────────────────────────────────────────────────────────────
+  toolHighlight.addEventListener('click', () => {
+    toParent('HIGHLIGHT', { color: '#facc15' });
+  });
+
+  toolDraw.addEventListener('click', () => {
+    drawOn = !drawOn;
+    toolDraw.classList.toggle('on', drawOn);
+    toolDraw.textContent = drawOn ? 'Stop Drawing' : 'Draw';
+    toParent(drawOn ? 'DRAW_ON' : 'DRAW_OFF');
+  });
+
+  addStickyBtn.addEventListener('click', () => {
+    const text = stickyText.value.trim();
+    if (!text) return;
+    toParent('STICKY', { text, x: 120, y: 120 });
     stickyText.value = '';
-    stickyModal.classList.remove('hidden');
-    stickyText.focus();
-  }
-});
-
-// Sticky modal
-stickyCancel.addEventListener('click', () => stickyModal.classList.add('hidden'));
-stickyOk.addEventListener('click', () => {
-  const text = stickyText.value.trim();
-  if (!text) return;
-  post('ADD_STICKY', {
-    text,
-    x: 100,
-    y: 100,
-    color: '#fef08a',
   });
-  stickyModal.classList.add('hidden');
-});
 
-// Mode change
-modeSelect.addEventListener('change', () => {
-  post('SET_MODE', { mode: modeSelect.value });
-});
-
-// Split/Merge
-splitBtn.addEventListener('click', () => {
-  isSplit = true;
-  post('SPLIT');
-  splitBtn.classList.add('hidden');
-  mergeBtn.classList.remove('hidden');
-});
-
-mergeBtn.addEventListener('click', () => {
-  isSplit = false;
-  post('MERGE');
-  mergeBtn.classList.add('hidden');
-  splitBtn.classList.remove('hidden');
-});
-
-// Leave
-leaveBtn.addEventListener('click', () => {
-  if (confirm('Leave this session?')) {
-    post('LEAVE_SESSION');
-  }
-});
-
-// Room ID copy
-roomIdEl.addEventListener('click', () => {
-  if (!session) return;
-  const link = `https://b.krl.kr/join/${session.roomId}`;
-  navigator.clipboard.writeText(link).then(() => {
-    const orig = roomIdEl.textContent;
-    roomIdEl.textContent = 'Copied!';
-    setTimeout(() => { roomIdEl.textContent = orig; }, 1500);
-  });
-});
-
-// Chat
-chatInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});
-
-chatInput.addEventListener('input', () => {
-  chatInput.style.height = 'auto';
-  chatInput.style.height = Math.min(chatInput.scrollHeight, 80) + 'px';
-});
-
-sendBtn.addEventListener('click', sendMessage);
-
-function sendMessage() {
-  const text = chatInput.value.trim();
-  if (!text) return;
-  post('SEND_CHAT', { text });
-  chatInput.value = '';
-  chatInput.style.height = 'auto';
-}
-
-// Reactions
-document.querySelectorAll('.sb-reaction-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    post('REACTION', { emoji: btn.dataset.emoji });
-  });
-});
-
-// ---- Render functions ----
-
-function renderMembers() {
-  if (!session) { membersContainer.innerHTML = ''; return; }
-  const members = session.members || [];
-
-  if (!members.length) {
-    membersContainer.innerHTML = '<div class="sb-empty">No members yet</div>';
-    return;
-  }
-
-  membersContainer.innerHTML = members.map(m => {
-    const isYou = m.id === session.user?.id;
-    const isLeader = m.id === session.leader;
-    const initial = (m.name || '?').charAt(0).toUpperCase();
-
-    return `
-      <div class="sb-member" style="margin-bottom:6px">
-        <div class="sb-member-avatar" style="background:${m.color}">${initial}</div>
-        <div class="sb-member-info">
-          <div class="sb-member-name">
-            ${escapeHtml(m.name)}
-            ${isYou ? '<span class="sb-badge sb-badge-you" style="margin-left:4px">You</span>' : ''}
-            ${isLeader ? '<span class="sb-badge sb-badge-leader" style="margin-left:4px">Leader</span>' : ''}
-          </div>
-          <div class="sb-member-url">${m.currentUrl ? trimUrl(m.currentUrl) : 'No page'}</div>
-        </div>
-        <div class="sb-member-actions">
-          ${!isYou ? `<button class="sb-icon-btn" onclick="jumpTo('${m.id}')" title="Jump to their page">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
-            </svg>
-          </button>` : ''}
-          ${session.isLeader && !isYou ? `<button class="sb-icon-btn" onclick="makeLeader('${m.id}')" title="Make leader">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-          </button>` : ''}
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-window.jumpTo = (userId) => post('JUMP_TO_USER', { userId });
-window.makeLeader = (userId) => post('SET_LEADER', { userId });
-
-function appendMessage(msg) {
-  const el = document.createElement('div');
-  el.className = 'sb-message';
-  el.dataset.id = msg.id;
-  const initial = (msg.userName || '?').charAt(0).toUpperCase();
-  const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  el.innerHTML = `
-    <div class="sb-message-header">
-      <div class="sb-message-avatar" style="background:${msg.color}">${initial}</div>
-      <span class="sb-message-name" style="color:${msg.color}">${escapeHtml(msg.userName)}</span>
-      <span class="sb-message-time">${time}</span>
-    </div>
-    <div class="sb-message-text">${escapeHtml(msg.text)}</div>
-  `;
-
-  messagesContainer.appendChild(el);
-
-  if (activeTab !== 'chat') {
-    unreadChat++;
-    chatBadge.textContent = unreadChat > 9 ? '9+' : unreadChat;
-    chatBadge.classList.remove('hidden');
-  }
-}
-
-function scrollChat() {
-  requestAnimationFrame(() => {
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  });
-}
-
-function renderAnnotations() {
-  if (!annotations.length) {
-    annotationsContainer.innerHTML = '<div class="sb-empty">No annotations yet</div>';
-    return;
-  }
-
-  annotationsContainer.innerHTML = annotations.map(a => `
-    <div class="sb-annotation-item" style="margin-bottom:6px">
-      <div class="sb-annotation-color" style="background:${a.color}"></div>
-      <div class="sb-annotation-body">
-        <div class="sb-annotation-who">${escapeHtml(a.userName)} - ${a.type}</div>
-        <div class="sb-annotation-text">${escapeHtml(a.text || a.note || trimUrl(a.url) || '')}</div>
-      </div>
-      <button class="sb-annotation-del" onclick="removeAnnotation('${a.id}')" title="Remove">x</button>
-    </div>
-  `).join('');
-}
-
-window.removeAnnotation = (id) => post('REMOVE_ANNOTATION', { id });
-
-function renderHistory() {
-  if (!history.length) {
-    historyContainer.innerHTML = '<div class="sb-empty">No browsing history yet</div>';
-    return;
-  }
-
-  historyContainer.innerHTML = history.slice().reverse().map(h => {
-    const member = session?.members?.find(m => m.id === h.userId);
-    const color = member?.color || '#6366f1';
-    const time = new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    return `
-      <div class="sb-history-item" style="margin-bottom:4px">
-        <div class="sb-history-dot" style="background:${color}"></div>
-        <div class="sb-history-info">
-          <div class="sb-history-url">${trimUrl(h.url)}</div>
-          <div class="sb-history-who">${escapeHtml(h.userName)} - ${time}</div>
-        </div>
-        <button class="sb-history-goto" onclick="gotoUrl('${escapeHtml(h.url)}')" title="Go to this URL">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-          </svg>
-        </button>
-      </div>
-    `;
-  }).join('');
-}
-
-window.gotoUrl = (url) => post('NAVIGATE', { url });
-
-// ---- Messages from content script ----
-
-window.addEventListener('message', (event) => {
-  if (!event.data || event.data.source !== 'shared-browser') return;
-  const { type } = event.data;
-
-  switch (type) {
-    case 'INIT':
-      session = event.data.session;
-      annotations = event.data.annotations || [];
-      updateUI();
-      break;
-
-    case 'SESSION_UPDATED':
-      session = event.data.session;
-      renderMembers();
-      if (session?.mode) modeSelect.value = session.mode;
-      break;
-
-    case 'CHAT_MESSAGE':
-      appendMessage(event.data.message);
-      if (activeTab === 'chat') scrollChat();
-      break;
-
-    case 'SERVER_EVENT': {
-      const { event: ev, data } = event.data;
-
-      if (ev === 'user_joined' && session) {
-        const u = data.user || data;
-        if (u && !session.members.find(m => m.id === u.id)) session.members.push(u);
-        renderMembers();
-      }
-
-      if (ev === 'user_left' && session) {
-        session.members = session.members.filter(m => m.id !== (data.userId || data.id));
-        renderMembers();
-      }
-
-      if (ev === 'mode_changed' && session) {
-        session.mode = data.mode;
-        modeSelect.value = data.mode;
-      }
-
-      if (ev === 'leader_changed' && session) {
-        session.leader = data.userId;
-        session.isLeader = data.userId === session.user?.id;
-        renderMembers();
-      }
-
-      if (ev === 'user_navigated' && session) {
-        const member = session.members.find(m => m.id === data.userId);
-        if (member) { member.currentUrl = data.url; renderMembers(); }
-        history.push({ userId: data.userId, userName: data.userName || '?', url: data.url, timestamp: Date.now() });
-        renderHistory();
-      }
-
-      if (ev === 'annotation_added') {
-        annotations.push(data.annotation || data);
-        renderAnnotations();
-      }
-
-      if (ev === 'annotation_removed') {
-        annotations = annotations.filter(a => a.id !== (data.id));
-        renderAnnotations();
-      }
-      break;
+  // ── Annotations ───────────────────────────────────────────────────────────
+  function renderAnnotations(anns) {
+    if (!anns.length) {
+      annList.innerHTML = '<div class="empty">No annotations yet.</div>';
+      return;
     }
+    annList.innerHTML = anns.map(a => {
+      const color = a.color || colorFor(a.userId);
+      const typeLabel = a.type === 'highlight' ? 'Highlight' : a.type === 'sticky' ? 'Note' : 'Drawing';
+      const preview = a.type === 'sticky' ? a.text : a.type === 'highlight' ? (a.note || 'Text highlight') : 'Drawing';
+      return `<div class="ann-item">
+        <div class="ann-dot" style="background:${color}"></div>
+        <div class="ann-body">
+          <div class="ann-who">${esc(a.userName || '')} &middot; ${typeLabel}</div>
+          <div class="ann-txt">${esc(preview)}</div>
+        </div>
+        <button class="ann-del" data-annid="${esc(a.id)}" title="Remove">&times;</button>
+      </div>`;
+    }).join('');
+    annList.querySelectorAll('.ann-del').forEach(btn => {
+      btn.addEventListener('click', () => toParent('REMOVE_ANN', { id: btn.dataset.annid }));
+    });
+  }
 
-    case 'TEXT_SELECTED':
-      if (selectedTool === 'highlight') {
-        addAnnotationBtn.textContent = `Highlight: "${event.data.text.slice(0, 30)}..."`;
+  // ── History ───────────────────────────────────────────────────────────────
+  function renderHistory(hist) {
+    if (!hist.length) {
+      historyList.innerHTML = '<div class="empty">Navigation history will appear here.</div>';
+      return;
+    }
+    historyList.innerHTML = [...hist].reverse().map(h => {
+      const color = h.color || colorFor(h.userId);
+      const url = shortUrl(h.url || '');
+      return `<div class="hist-item">
+        <div class="hist-dot" style="background:${color}"></div>
+        <div class="hist-body">
+          <div class="hist-url" title="${esc(h.url)}">${esc(url)}</div>
+          <div class="hist-who">${esc(h.userName || '')} &middot; ${fmtTime(h.timestamp)}</div>
+        </div>
+        <button class="hist-go" title="Go to page" data-url="${esc(h.url)}">&#8250;</button>
+      </div>`;
+    }).join('');
+    historyList.querySelectorAll('.hist-go').forEach(btn => {
+      btn.addEventListener('click', () => toParent('NAVIGATE', { url: btn.dataset.url }));
+    });
+  }
+
+  // ── Messages from content script ──────────────────────────────────────────
+  window.addEventListener('message', e => {
+    if (!e.data?.__sb) return;
+    const { type } = e.data;
+
+    switch (type) {
+
+      case 'LIVE_CHAT':
+        state.chat = [...(state.chat || []), e.data.message];
+        addMsgEl(e.data.message);
+        if (activeTab !== 'chat') {
+          unread++;
+          chatBadge.style.display = 'inline-block';
+          chatBadge.textContent = unread > 9 ? '9+' : unread;
+        }
+        break;
+
+      case 'LIVE_MEMBERS':
+        state.members = e.data.members || [];
+        renderMembers(state.members);
+        break;
+
+      case 'LIVE_HISTORY':
+        state.history = e.data.history || [];
+        renderHistory(state.history);
+        break;
+
+      case 'SERVER_MSG': {
+        const msg = e.data.msg;
+        if (!msg) break;
+        if (msg.type === 'mode_changed') {
+          if (state.session) state.session.mode = msg.mode;
+          modeSel.value = msg.mode;
+        } else if (msg.type === 'leader_changed') {
+          if (state.session) {
+            state.session.leader = msg.userId;
+            state.session.isLeader = msg.userId === state.session.userId;
+          }
+          renderMembers(state.members || []);
+        } else if (msg.type === 'user_split') {
+          if (!state.splitUsers) state.splitUsers = [];
+          if (!state.splitUsers.includes(msg.userId)) state.splitUsers.push(msg.userId);
+          updateSplitBtn();
+        } else if (msg.type === 'user_merged') {
+          state.splitUsers = (state.splitUsers || []).filter(id => id !== msg.userId);
+          updateSplitBtn();
+        } else if (msg.type === 'created' || msg.type === 'joined') {
+          // Full state refresh
+          chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
+            if (res) { state = res; applyState(); }
+          });
+        }
+        break;
       }
-      break;
+    }
+  });
+
+  function updateSplitBtn() {
+    const myId = state.session?.userId;
+    const isSplit = state.splitUsers?.includes(myId);
+    splitBtn.classList.toggle('on', !!isSplit);
+    splitBtn.textContent = isSplit ? 'Merge' : 'Split';
   }
-});
 
-function updateUI() {
-  if (!session) return;
-  roomIdEl.textContent = session.roomId || '------';
-  if (session.mode) modeSelect.value = session.mode;
-  renderMembers();
-  renderAnnotations();
-  renderHistory();
-}
-
-// ---- Utils ----
-
-function post(type, data) {
-  window.parent.postMessage({ source: 'shared-browser-sidebar', type, data }, '*');
-}
-
-function userColor() {
-  return session?.user?.color || '#6366f1';
-}
-
-function trimUrl(url) {
-  if (!url) return '';
-  try {
-    const u = new URL(url);
-    return u.hostname + (u.pathname !== '/' ? u.pathname.slice(0, 30) : '');
-  } catch {
-    return url.slice(0, 40);
+  // ── postMessage to content script ─────────────────────────────────────────
+  function toParent(type, data = {}) {
+    window.parent.postMessage({ __sbSidebar: true, type, data }, '*');
   }
-}
 
-function escapeHtml(str) {
-  if (!str) return '';
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
-}
+})();
