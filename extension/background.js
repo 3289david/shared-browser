@@ -1,6 +1,9 @@
 // Background service worker — single source of truth for all session state.
 // Content scripts and sidebar read/write state through here.
 
+// Firefox does not support storage.session; fall back to storage.local
+const store = chrome.storage.session ?? chrome.storage.local;
+
 let state = {
   session: null,      // { active, roomId, userId, mode, isLeader, leader, user }
   members: [],        // [{ id, name, color, currentUrl, permission }]
@@ -15,7 +18,7 @@ let keepAliveTimer = null;
 
 function startKeepAlive() {
   if (keepAliveTimer) return;
-  keepAliveTimer = setInterval(() => chrome.storage.session.get('_ka'), 20000);
+  keepAliveTimer = setInterval(() => store.get('_ka'), 20000);
 }
 
 function stopKeepAlive() {
@@ -24,7 +27,7 @@ function stopKeepAlive() {
 }
 
 async function persist() {
-  await chrome.storage.session.set({ state: {
+  await store.set({ state: {
     session: state.session,
     members: state.members,
     chat: state.chat.slice(-200),
@@ -35,7 +38,7 @@ async function persist() {
 }
 
 async function loadPersistedState() {
-  const data = await chrome.storage.session.get('state');
+  const data = await store.get('state');
   if (data.state?.session?.active) {
     state = { ...state, ...data.state };
     startKeepAlive();
@@ -100,7 +103,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       case 'SESSION_END': {
         state = { session: null, members: [], chat: [], annotations: [], history: [], splitUsers: [] };
         stopKeepAlive();
-        await chrome.storage.session.remove('state');
+        await store.remove('state');
         broadcastToTabs({ type: 'SESSION_ENDED' });
         reply({ ok: true });
         break;

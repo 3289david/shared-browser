@@ -8,6 +8,7 @@
 
   // ── Config ────────────────────────────────────────────────────────────────
   const WS_URL = 'wss://b.krl.kr/ws';
+  function setHTML(el, html) { el.replaceChildren(document.createRange().createContextualFragment(html)); }
 
   // ── State (ephemeral, per-page) ───────────────────────────────────────────
   let ws = null;
@@ -214,9 +215,7 @@
       el = document.createElement('div');
       el.id = `__sb_c_${userId}`;
       el.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483644;transition:left .07s,top .07s;';
-      el.innerHTML = `
-        <svg width="16" height="20" viewBox="0 0 16 20" fill="${color}" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))"><path d="M0 0 L0 16 L4 12 L7 18 L9 17 L6 11 L11 11Z"/></svg>
-        <span style="background:${color};color:#fff;font:600 11px/1 system-ui;padding:2px 6px;border-radius:3px;white-space:nowrap;display:block;margin-top:1px;">${esc(name)}</span>`;
+      setHTML(el, `<svg width="16" height="20" viewBox="0 0 16 20" fill="${color}" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))"><path d="M0 0 L0 16 L4 12 L7 18 L9 17 L6 11 L11 11Z"/></svg><span style="background:${color};color:#fff;font:600 11px/1 system-ui;padding:2px 6px;border-radius:3px;white-space:nowrap;display:block;margin-top:1px;">${esc(name)}</span>`);
       cursorOverlay.appendChild(el);
     }
     el.style.left = ax + 'px';
@@ -258,7 +257,7 @@
     const el = document.createElement('div');
     el.dataset.ann = a.id;
     el.style.cssText = `position:fixed;left:${a.x}px;top:${a.y}px;background:${a.color||'#fef08a'};color:#111;padding:8px 10px;border-radius:6px;font:13px/1.4 system-ui;max-width:180px;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:2147483641;cursor:move;user-select:none;word-break:break-word;min-width:80px;`;
-    el.innerHTML = `<div style="font-size:10px;font-weight:700;opacity:.6;margin-bottom:3px;">${esc(a.userName)}</div>${esc(a.text)}`;
+    setHTML(el, `<div style="font-size:10px;font-weight:700;opacity:.6;margin-bottom:3px;">${esc(a.userName)}</div>${esc(a.text)}`);
     makeDraggable(el);
     document.documentElement.appendChild(el);
   }
@@ -587,24 +586,24 @@
     const ov = document.createElement('div');
     ov.id = '__sb_joinov';
     ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(6,6,18,.93);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-family:system-ui;';
-    ov.innerHTML = `
-      <div style="background:#12122b;border:1px solid #2d2d44;border-radius:16px;padding:36px 40px;width:340px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);">
+    setHTML(ov, `<div style="background:#12122b;border:1px solid #2d2d44;border-radius:16px;padding:36px 40px;width:340px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);">
         <div style="width:52px;height:52px;margin:0 auto 16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:13px;display:flex;align-items:center;justify-content:center;">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="white" stroke-width="2"/><circle cx="8.5" cy="10.5" r="2" fill="white"/><circle cx="15.5" cy="10.5" r="2" fill="white"/><path d="M8 15.5 Q12 18 16 15.5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
         </div>
         <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Shared Browser</div>
         <h2 style="font-size:21px;font-weight:800;color:#fff;margin-bottom:6px">You're invited</h2>
-        <div style="font-family:monospace;font-size:24px;font-weight:900;letter-spacing:5px;color:#a5b4fc;background:rgba(99,102,241,.12);padding:8px 18px;border-radius:8px;display:inline-block;border:1px solid rgba(99,102,241,.25);margin-bottom:20px">${code}</div><br>
+        <div style="font-family:monospace;font-size:24px;font-weight:900;letter-spacing:5px;color:#a5b4fc;background:rgba(99,102,241,.12);padding:8px 18px;border-radius:8px;display:inline-block;border:1px solid rgba(99,102,241,.25);margin-bottom:20px">${esc(code)}</div><br>
         <input id="__sb_jname" type="text" placeholder="Your name" maxlength="30"
           style="width:100%;padding:11px 14px;background:#0f0f1a;border:1.5px solid #2d2d44;border-radius:8px;color:#e2e8f0;font-size:14px;outline:none;margin-bottom:10px;box-sizing:border-box;text-align:center;"/>
         <button id="__sb_jbtn" style="width:100%;padding:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:8px;color:white;font-size:14px;font-weight:700;cursor:pointer;">Join Session</button>
         <p id="__sb_jerr" style="color:#f87171;font-size:12px;margin-top:8px;display:none"></p>
-        <button onclick="document.getElementById('__sb_joinov').remove()" style="background:none;border:none;color:#475569;font-size:12px;cursor:pointer;margin-top:10px;">Dismiss</button>
-      </div>`;
+        <button id="__sb_jdismiss" style="background:none;border:none;color:#475569;font-size:12px;cursor:pointer;margin-top:10px;">Dismiss</button>
+      </div>`);
     document.documentElement.appendChild(ov);
     const ni = document.getElementById('__sb_jname');
     const btn = document.getElementById('__sb_jbtn');
     const err = document.getElementById('__sb_jerr');
+    document.getElementById('__sb_jdismiss').addEventListener('click', () => ov.remove());
     chrome.storage.local.get('sbName', d => { if (d.sbName) ni.value = d.sbName; });
     ni.focus();
     ni.addEventListener('focus', () => ni.style.borderColor = '#6366f1');

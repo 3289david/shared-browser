@@ -10,7 +10,7 @@
     "<all_urls>"
   ],
   "background": {
-    "scripts": ["background-compat.js"],
+    "scripts": ["background.js"],
     "persistent": false
   },
   "content_scripts": [
@@ -37,11 +37,14 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "web_accessible_resources": ["sidebar.html", "icons/*"],
+  "web_accessible_resources": ["sidebar.html", "sidebar.js", "icons/*"],
   "browser_specific_settings": {
     "gecko": {
       "id": "shared-browser@b.krl.kr",
-      "strict_min_version": "109.0"
+      "strict_min_version": "109.0",
+      "data_collection_permissions": {
+        "collected": false
+      }
     }
   }
 }

@@ -1,4 +1,5 @@
 const $ = id => document.getElementById(id);
+function setHTML(el, html) { el.replaceChildren(document.createRange().createContextualFragment(html)); }
 const viewIdle    = $('view-idle');
 const viewActive  = $('view-active');
 const nameInput   = $('name-input');
@@ -54,12 +55,12 @@ function showActive() {
   roleBadge.textContent = s.isLeader ? 'Leader' : 'Member';
   roleBadge.style.background = s.isLeader ? '#1e3a5f' : '#1a2e1a';
   roleBadge.style.color = s.isLeader ? '#7dd3fc' : '#86efac';
-  membersEl.innerHTML = ms.map(m => `
+  setHTML(membersEl, ms.map(m => `
     <div class="member-item">
       <div class="member-dot" style="background:${m.color||'#6366f1'}"></div>
       <span class="member-name">${esc(m.name)}</span>
       ${s.leader === m.id ? '<span class="member-badge">Leader</span>' : ''}
-    </div>`).join('');
+    </div>`).join(''));
 }
 
 // Create session

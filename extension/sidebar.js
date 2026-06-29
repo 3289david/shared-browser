@@ -2,6 +2,7 @@
   'use strict';
 
   const COLORS = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#22c55e','#14b8a6','#ef4444','#3b82f6'];
+  function setHTML(el, html) { el.replaceChildren(document.createRange().createContextualFragment(html)); }
   function initials(n) { return (n||'?').charAt(0).toUpperCase(); }
   function colorFor(id) { if (!id) return COLORS[0]; let h=0; for (const c of id) h=(h*31+c.charCodeAt(0))>>>0; return COLORS[h%COLORS.length]; }
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -192,7 +193,7 @@
       }).join('');
     }
 
-    membersList.innerHTML = html;
+    setHTML(membersList, html);
 
     membersList.querySelectorAll('[data-leader]').forEach(b =>
       b.addEventListener('click', () => toParent('SET_LEADER', { userId: b.dataset.leader })));
@@ -204,7 +205,7 @@
 
   // ── Chat ──────────────────────────────────────────────────────────────────
   function renderAllChat(msgs) {
-    messagesEl.innerHTML = '';
+    messagesEl.replaceChildren();
     msgs.forEach(appendMsg);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
@@ -213,12 +214,12 @@
     const color = m.color || colorFor(m.userId);
     const div = document.createElement('div');
     div.className = 'msg';
-    div.innerHTML = `<div class="msg-hd">
+    setHTML(div, `<div class="msg-hd">
       <div class="msg-av" style="background:${color}">${esc(initials(m.userName))}</div>
       <span class="msg-name" style="color:${color}">${esc(m.userName)}</span>
       <span class="msg-time">${fmtTime(m.timestamp)}</span>
     </div>
-    <div class="msg-body">${esc(m.text)}</div>`;
+    <div class="msg-body">${esc(m.text)}</div>`);
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
@@ -284,11 +285,11 @@
     annCount.textContent = anns.length;
 
     if (!anns.length) {
-      annList.innerHTML = `<div class="empty">No annotations yet.<br>Highlight text, draw, or add a sticky note.</div>`;
+      setHTML(annList, '<div class="empty">No annotations yet.<br>Highlight text, draw, or add a sticky note.</div>');
       return;
     }
 
-    annList.innerHTML = anns.map(a => {
+    setHTML(annList, anns.map(a => {
       const color = a.color || colorFor(a.userId);
       let iconClass = '', iconChar = '', tagStyle = '', typeLabel = '';
       if (a.type === 'highlight') {
@@ -323,7 +324,7 @@
           </svg>
         </button>
       </div>`;
-    }).join('');
+    }).join(''));
 
     annList.querySelectorAll('.ann-del').forEach(btn =>
       btn.addEventListener('click', () => toParent('REMOVE_ANN', { id: btn.dataset.id })));
