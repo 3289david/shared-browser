@@ -199,7 +199,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
 chrome.runtime.onStartup.addListener(loadPersistedState);
 chrome.runtime.onInstalled.addListener(async () => {
   await loadPersistedState();
-  chrome.sidePanel?.setPanelBehavior?.({ openPanelOnActionClick: false }).catch(() => {});
+  if (chrome.sidePanel) chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {});
 });
 
 loadPersistedState();
