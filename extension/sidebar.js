@@ -52,12 +52,27 @@
     if (res?.session?.active) { state = res; applyState(); }
   });
 
-  // Path 3: storage onChanged — fires the instant background calls persist()
+  // Path 3a: _sbRoomId in local storage — written by content.js the INSTANT
+  // the WS 'created'/'joined' response arrives, with NO service worker involved.
+  // This is the most reliable path because it bypasses the SW entirely.
   chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes._sbRoomId?.newValue) {
+      const roomId = changes._sbRoomId.newValue;
+      if (state.session?.active) {
+        state.session.roomId = roomId;
+        applyState();
+      }
+      // Belt-and-suspenders: also fetch full state from SW if it's alive
+      chrome.runtime.sendMessage({ type: 'GET_STATE' }, r => {
+        if (r?.session?.active) { state = r; applyState(); }
+      });
+    }
+    // Path 3b: full state from background SW persist()
     const want = chrome.storage['session'] ? 'session' : 'local';
-    if (area !== want || !changes.state?.newValue) return;
-    const s = changes.state.newValue;
-    if (s?.session?.active) { state = s; applyState(); }
+    if (area === want && changes.state?.newValue?.session?.active) {
+      state = changes.state.newValue;
+      applyState();
+    }
   });
 
   // Path 4: polling fallback — catches anything the other paths miss

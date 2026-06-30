@@ -61,6 +61,9 @@
     switch (msg.type) {
 
       case 'created':
+        // Write roomId to local storage NOW — bypasses SW completely.
+        // Sidebar's onChanged('local') fires immediately, no SW needed.
+        chrome.storage.local.set({ _sbRoomId: msg.roomId, _sbLeader: true });
         chrome.runtime.sendMessage({
           type: 'SESSION_CONFIRMED',
           sessionUpdates: { roomId: msg.roomId, userId: msg.user.id, pendingCreate: false, leader: msg.user.id, isLeader: true },
@@ -76,6 +79,7 @@
         break;
 
       case 'joined':
+        chrome.storage.local.set({ _sbRoomId: msg.roomId, _sbLeader: false });
         if (window._sbJoinCb) { window._sbJoinCb(); window._sbJoinCb = null; }
         chrome.runtime.sendMessage({
           type: 'SESSION_CONFIRMED',
