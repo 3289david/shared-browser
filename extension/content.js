@@ -640,14 +640,16 @@
     });
   }
 
-  // Poll every 200ms until roomId arrives, then keep pushing for 1s to
-  // guarantee the sidebar receives it even if earlier messages were dropped.
+  // Poll every 200ms until roomId arrives, then keep pushing for 1s.
+  // Also writes roomId to chrome.storage.local so sidebar can hear it
+  // via onChanged even if postMessage is dropped.
   function waitForRoomId() {
     let found = false;
     const t = setInterval(() => {
       chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
         if (!res?.session?.roomId) return;
         toSidebar({ type: 'SESSION_CHANGED', state: res });
+        chrome.storage.local.set({ _sbRoomId: res.session.roomId, _sbRoomIdTs: Date.now() });
         if (!found) { found = true; setTimeout(() => clearInterval(t), 1000); }
       });
     }, 200);

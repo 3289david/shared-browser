@@ -46,7 +46,17 @@
     applyState();
   });
 
-  // Backup: poll background directly every 500ms until roomId arrives
+  // Backup 1: storage event — content.js writes _sbRoomId when roomId arrives.
+  // chrome.storage.onChanged fires reliably in extension pages regardless of
+  // postMessage timing, so this is the most reliable delivery path.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local' || !changes._sbRoomId?.newValue) return;
+    chrome.runtime.sendMessage({ type: 'GET_STATE' }, r => {
+      if (r?.session?.active) { state = r; applyState(); }
+    });
+  });
+
+  // Backup 2: poll background directly every 500ms until roomId arrives
   const _bgPoll = setInterval(() => {
     if (state.session?.roomId) { clearInterval(_bgPoll); return; }
     chrome.runtime.sendMessage({ type: 'GET_STATE' }, r => {
