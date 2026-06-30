@@ -44,28 +44,23 @@
   chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
     if (res) state = res;
     applyState();
-    // If session active but roomId not confirmed yet (server hasn't responded),
-    // poll background every 400ms until we have it — max 15s
+    // Poll until roomId arrives — server round-trip may be slower than iframe load
     if (state.session?.active && !state.session?.roomId) {
       const t = setInterval(() => {
         chrome.runtime.sendMessage({ type: 'GET_STATE' }, r => {
-          if (r?.session?.roomId) {
-            state = r;
-            applyState();
-            clearInterval(t);
-          }
+          if (r?.session?.roomId) { state = r; applyState(); clearInterval(t); }
         });
-      }, 400);
-      setTimeout(() => clearInterval(t), 15000);
+      }, 150);
+      setTimeout(() => clearInterval(t), 20000);
     }
   });
 
   function applyState() {
     const s = state.session;
     if (!s?.active) return;
-    const code = s.roomId || '------';
-    codeText.textContent = code;
-    shareUrl.textContent = `b.krl.kr/${code}`;
+    const code = s.roomId || null;
+    codeText.textContent = code || 'Connecting...';
+    shareUrl.textContent = code ? `b.krl.kr/${code}` : 'Waiting for room code...';
     if (s.mode) modeSel.value = s.mode;
     updateSplitBtn();
     renderMembers(state.members || []);
@@ -92,20 +87,40 @@
   // ── Copy / share link ─────────────────────────────────────────────────────
   function getLink() { return `https://b.krl.kr/${state.session?.roomId || ''}`; }
 
-  function doCopy(btn, original) {
-    navigator.clipboard.writeText(getLink()).then(() => {
-      btn.textContent = 'Copied!';
-      setTimeout(() => { btn.textContent = original; }, 1500);
-    }).catch(() => {});
+  function copyText(text, onDone) {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(onDone).catch(() => execCommandCopy(text, onDone));
+    } else {
+      execCommandCopy(text, onDone);
+    }
   }
 
-  copyBtn.addEventListener('click', () => doCopy(copyBtn, 'Copy Link'));
+  function execCommandCopy(text, onDone) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); onDone(); } catch {}
+    ta.remove();
+  }
+
+  copyBtn.addEventListener('click', () => {
+    if (!state.session?.roomId) return;
+    copyText(getLink(), () => {
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => copyBtn.textContent = orig, 1500);
+    });
+  });
+
   codeEl.addEventListener('click', () => {
-    navigator.clipboard.writeText(getLink()).then(() => {
+    if (!state.session?.roomId) return;
+    copyText(getLink(), () => {
       const old = codeText.textContent;
       codeText.textContent = 'Copied!';
       setTimeout(() => codeText.textContent = old, 1300);
-    }).catch(() => {});
+    });
   });
 
   // ── Leave ─────────────────────────────────────────────────────────────────

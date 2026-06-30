@@ -61,14 +61,16 @@
     switch (msg.type) {
 
       case 'created':
-        // Wait for background to confirm before updating sidebar so roomId is set
         chrome.runtime.sendMessage({
           type: 'SESSION_CONFIRMED',
           sessionUpdates: { roomId: msg.roomId, userId: msg.user.id, pendingCreate: false, leader: msg.user.id, isLeader: true },
           user: msg.user, room: msg.room,
         }, () => {
           sessionState = { ...sessionState, roomId: msg.roomId, userId: msg.user.id, isLeader: true };
-          toSidebar({ type: 'SERVER_MSG', msg });
+          // Fetch fresh confirmed state and push directly — avoids broadcast race with iframe load
+          chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
+            if (res) toSidebar({ type: 'SESSION_CHANGED', state: res });
+          });
         });
         setTimeout(() => wsSend('navigate', { url: location.href, title: document.title, scroll: {x:scrollX, y:scrollY} }), 200);
         break;
@@ -80,7 +82,9 @@
           user: msg.user, room: msg.room,
         }, () => {
           sessionState = { ...sessionState, roomId: msg.roomId, userId: msg.user.id };
-          toSidebar({ type: 'SERVER_MSG', msg });
+          chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
+            if (res) toSidebar({ type: 'SESSION_CHANGED', state: res });
+          });
         });
         // Navigate to leader's page if in follow mode
         if (msg.room.mode === 'follow' && msg.room.state?.url && msg.room.state.url !== location.href) {
