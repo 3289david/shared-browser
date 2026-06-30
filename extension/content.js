@@ -640,14 +640,15 @@
     });
   }
 
-  // Poll background every 200ms until roomId is confirmed, then push to sidebar.
-  // More reliable than relying on broadcast or sidebar's own chrome.runtime calls.
+  // Poll every 200ms until roomId arrives, then keep pushing for 1s to
+  // guarantee the sidebar receives it even if earlier messages were dropped.
   function waitForRoomId() {
+    let found = false;
     const t = setInterval(() => {
       chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
         if (!res?.session?.roomId) return;
         toSidebar({ type: 'SESSION_CHANGED', state: res });
-        clearInterval(t);
+        if (!found) { found = true; setTimeout(() => clearInterval(t), 1000); }
       });
     }, 200);
     setTimeout(() => clearInterval(t), 20000);

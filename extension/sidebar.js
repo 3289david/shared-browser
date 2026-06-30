@@ -46,6 +46,15 @@
     applyState();
   });
 
+  // Backup: poll background directly every 500ms until roomId arrives
+  const _bgPoll = setInterval(() => {
+    if (state.session?.roomId) { clearInterval(_bgPoll); return; }
+    chrome.runtime.sendMessage({ type: 'GET_STATE' }, r => {
+      if (r?.session?.roomId) { state = r; applyState(); clearInterval(_bgPoll); }
+    });
+  }, 500);
+  setTimeout(() => clearInterval(_bgPoll), 30000);
+
   function applyState() {
     const s = state.session;
     if (!s?.active) return;
@@ -97,11 +106,14 @@
   }
 
   copyBtn.addEventListener('click', () => {
-    if (!state.session?.roomId) return;
+    if (!state.session?.roomId) {
+      copyBtn.textContent = 'Not ready...';
+      setTimeout(() => copyBtn.textContent = 'Copy Link', 1200);
+      return;
+    }
     copyText(getLink(), () => {
-      const orig = copyBtn.textContent;
       copyBtn.textContent = 'Copied!';
-      setTimeout(() => copyBtn.textContent = orig, 1500);
+      setTimeout(() => copyBtn.textContent = 'Copy Link', 1500);
     });
   });
 
