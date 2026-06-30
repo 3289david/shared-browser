@@ -41,48 +41,18 @@
   const annCount    = $('ann-count');
 
   // ── Init ──────────────────────────────────────────────────────────────────
-  // Path 1: direct storage read (background persist() keeps this current)
-  const _store = chrome.storage['session'] ?? chrome.storage.local;
-  _store.get('state', data => {
-    if (data.state?.session?.active) { state = data.state; applyState(); }
-  });
-
-  // Path 2: runtime message (also handles case where storage read missed roomId)
-  chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
-    if (res?.session?.active) { state = res; applyState(); }
-  });
-
-  // Path 3a: _sbRoomId in local storage — written by content.js the INSTANT
-  // the WS 'created'/'joined' response arrives, with NO service worker involved.
-  // This is the most reliable path because it bypasses the SW entirely.
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && changes._sbRoomId?.newValue) {
-      const roomId = changes._sbRoomId.newValue;
-      if (state.session?.active) {
-        state.session.roomId = roomId;
-        applyState();
-      }
-      // Belt-and-suspenders: also fetch full state from SW if it's alive
-      chrome.runtime.sendMessage({ type: 'GET_STATE' }, r => {
-        if (r?.session?.active) { state = r; applyState(); }
-      });
-    }
-    // Path 3b: full state from background SW persist()
-    const want = chrome.storage['session'] ? 'session' : 'local';
-    if (area === want && changes.state?.newValue?.session?.active) {
-      state = changes.state.newValue;
-      applyState();
-    }
-  });
-
-  // Path 4: polling fallback — catches anything the other paths miss
-  const _bgPoll = setInterval(() => {
-    if (state.session?.roomId) { clearInterval(_bgPoll); return; }
-    chrome.runtime.sendMessage({ type: 'GET_STATE' }, r => {
-      if (r?.session?.roomId) { state = r; applyState(); clearInterval(_bgPoll); }
-    });
-  }, 500);
-  setTimeout(() => clearInterval(_bgPoll), 30000);
+  // Ping content.js every 200ms asking for state. Content.js holds sessionState
+  // in its own memory (updated the instant WS 'created' arrives, no SW needed).
+  // This is the only path guaranteed to work regardless of SW state.
+  function askParent() {
+    window.parent.postMessage({ __sbSidebar: true, type: 'REQUEST_STATE' }, '*');
+  }
+  askParent();
+  const _poll = setInterval(() => {
+    if (state.session?.roomId) { clearInterval(_poll); return; }
+    askParent();
+  }, 200);
+  setTimeout(() => clearInterval(_poll), 30000);
 
   function applyState() {
     const s = state.session;

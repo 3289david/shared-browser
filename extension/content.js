@@ -61,16 +61,15 @@
     switch (msg.type) {
 
       case 'created':
-        // Write roomId to local storage NOW — bypasses SW completely.
-        // Sidebar's onChanged('local') fires immediately, no SW needed.
-        chrome.storage.local.set({ _sbRoomId: msg.roomId, _sbLeader: true });
+        // Update sessionState IMMEDIATELY — no SW needed.
+        // Sidebar polls via REQUEST_STATE and reads this directly.
+        sessionState = { ...sessionState, roomId: msg.roomId, userId: msg.user.id, pendingCreate: false, isLeader: true, leader: msg.user.id };
+        toSidebar({ type: 'SESSION_CHANGED', state: { session: sessionState, members: msg.room?.users || [], chat: msg.room?.chat || [], annotations: msg.room?.annotations || [], history: msg.room?.history || [], splitUsers: [] } });
         chrome.runtime.sendMessage({
           type: 'SESSION_CONFIRMED',
           sessionUpdates: { roomId: msg.roomId, userId: msg.user.id, pendingCreate: false, leader: msg.user.id, isLeader: true },
           user: msg.user, room: msg.room,
         }, () => {
-          sessionState = { ...sessionState, roomId: msg.roomId, userId: msg.user.id, isLeader: true };
-          // Fetch fresh confirmed state and push directly — avoids broadcast race with iframe load
           chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
             if (res) toSidebar({ type: 'SESSION_CHANGED', state: res });
           });
@@ -79,14 +78,14 @@
         break;
 
       case 'joined':
-        chrome.storage.local.set({ _sbRoomId: msg.roomId, _sbLeader: false });
+        sessionState = { ...sessionState, roomId: msg.roomId, userId: msg.user.id, pendingJoin: false, isLeader: msg.room.leader === msg.user.id };
+        toSidebar({ type: 'SESSION_CHANGED', state: { session: sessionState, members: msg.room?.users || [], chat: msg.room?.chat || [], annotations: msg.room?.annotations || [], history: msg.room?.history || [], splitUsers: [] } });
         if (window._sbJoinCb) { window._sbJoinCb(); window._sbJoinCb = null; }
         chrome.runtime.sendMessage({
           type: 'SESSION_CONFIRMED',
           sessionUpdates: { roomId: msg.roomId, userId: msg.user.id, pendingJoin: false, isLeader: msg.room.leader === msg.user.id },
           user: msg.user, room: msg.room,
         }, () => {
-          sessionState = { ...sessionState, roomId: msg.roomId, userId: msg.user.id };
           chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
             if (res) toSidebar({ type: 'SESSION_CHANGED', state: res });
           });
@@ -528,6 +527,16 @@
       case 'NAVIGATE':
         if (data.url && data.url !== location.href) location.href = data.url;
         break;
+
+      case 'REQUEST_STATE': {
+        // Sidebar is asking for current state. Use local sessionState first
+        // (always available, no SW needed), then upgrade with full SW state.
+        const local = { session: sessionState, members: [], chat: [], annotations: [], history: [], splitUsers: [] };
+        chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
+          toSidebar({ type: 'SESSION_CHANGED', state: (res?.session?.roomId ? res : local) });
+        });
+        break;
+      }
 
       case 'LEAVE':
         chrome.runtime.sendMessage({ type: 'SESSION_END' });
