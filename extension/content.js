@@ -76,6 +76,7 @@
         break;
 
       case 'joined':
+        if (window._sbJoinCb) { window._sbJoinCb(); window._sbJoinCb = null; }
         chrome.runtime.sendMessage({
           type: 'SESSION_CONFIRMED',
           sessionUpdates: { roomId: msg.roomId, userId: msg.user.id, pendingJoin: false, isLeader: msg.room.leader === msg.user.id },
@@ -164,7 +165,22 @@
         break;
 
       case 'error':
-        showToast(msg.message, '#ef4444');
+        // If leader reconnected and their old room is gone (server restart), recreate it
+        if (msg.message?.includes('not found') && sessionState?.isLeader) {
+          wsSend('create', { name: sessionState.user?.name, mode: sessionState.mode || 'follow' });
+        } else {
+          showToast(msg.message, '#ef4444');
+          // Surface error in content-script join overlay if it's still open
+          const jbtn = document.getElementById('__sb_jbtn');
+          const jerr = document.getElementById('__sb_jerr');
+          if (jbtn) { jbtn.disabled = false; jbtn.textContent = 'Join Session'; }
+          if (jerr) { jerr.textContent = msg.message; jerr.style.display = 'block'; }
+          // Surface error in landing page overlay if present
+          const lpBtn = document.getElementById('join-action-btn');
+          const lpMsg = document.getElementById('join-status-msg');
+          if (lpBtn) { lpBtn.disabled = false; lpBtn.textContent = 'Join Session'; }
+          if (lpMsg) { lpMsg.style.color = '#f87171'; lpMsg.style.display = 'block'; lpMsg.textContent = msg.message; }
+        }
         break;
 
       case 'pong': break;
@@ -574,7 +590,7 @@
     const code = (match?.[1] || qRoom || '').toUpperCase();
     if (!code) return;
 
-    document.documentElement.setAttribute('data-sb-ext', 'true');
+    document.documentElement.setAttribute('data-sb-extension', 'true');
     document.addEventListener('sb:join', e => {
       const { roomId, name } = e.detail || {};
       if (roomId && name) initiateJoin(roomId, name);
@@ -627,6 +643,7 @@
 
   function initiateJoin(roomId, name, cb) {
     chrome.storage.local.set({ sbName: name });
+    window._sbJoinCb = cb; // called from 'joined' handler on success
     chrome.runtime.sendMessage({
       type: 'SESSION_START',
       session: { active: true, roomId, user: { name }, mode: 'follow', isLeader: false, pendingJoin: true, userId: null },
@@ -636,7 +653,6 @@
       injectSidebar();
       trackMouse();
       waitForRoomId();
-      if (cb) cb();
     });
   }
 
