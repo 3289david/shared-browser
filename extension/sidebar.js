@@ -44,23 +44,14 @@
   chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
     if (res) state = res;
     applyState();
-    // Poll until roomId arrives — server round-trip may be slower than iframe load
-    if (state.session?.active && !state.session?.roomId) {
-      const t = setInterval(() => {
-        chrome.runtime.sendMessage({ type: 'GET_STATE' }, r => {
-          if (r?.session?.roomId) { state = r; applyState(); clearInterval(t); }
-        });
-      }, 150);
-      setTimeout(() => clearInterval(t), 20000);
-    }
   });
 
   function applyState() {
     const s = state.session;
     if (!s?.active) return;
-    const code = s.roomId || null;
-    codeText.textContent = code || 'Connecting...';
-    shareUrl.textContent = code ? `b.krl.kr/${code}` : 'Waiting for room code...';
+    const code = s.roomId || '------';
+    codeText.textContent = code;
+    shareUrl.textContent = `b.krl.kr/${code}`;
     if (s.mode) modeSel.value = s.mode;
     updateSplitBtn();
     renderMembers(state.members || []);

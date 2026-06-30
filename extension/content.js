@@ -525,6 +525,7 @@
         wsConnect(() => { wsSend('create', { name: msg.name, mode: msg.mode }); });
         injectSidebar();
         trackMouse();
+        waitForRoomId();
         reply?.({ ok: true });
         break;
 
@@ -634,8 +635,22 @@
       wsConnect(() => { wsSend('join', { roomId, name }); });
       injectSidebar();
       trackMouse();
+      waitForRoomId();
       if (cb) cb();
     });
+  }
+
+  // Poll background every 200ms until roomId is confirmed, then push to sidebar.
+  // More reliable than relying on broadcast or sidebar's own chrome.runtime calls.
+  function waitForRoomId() {
+    const t = setInterval(() => {
+      chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
+        if (!res?.session?.roomId) return;
+        toSidebar({ type: 'SESSION_CHANGED', state: res });
+        clearInterval(t);
+      });
+    }, 200);
+    setTimeout(() => clearInterval(t), 20000);
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────
