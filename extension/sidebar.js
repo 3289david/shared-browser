@@ -41,21 +41,33 @@
   const annCount    = $('ann-count');
 
   // ── Init ──────────────────────────────────────────────────────────────────
-  // Read directly from storage — background persist() writes here on every
-  // state change, so this works without needing the service worker alive.
+  // Path 1: direct storage read (background persist() keeps this current)
   const _store = chrome.storage['session'] ?? chrome.storage.local;
   _store.get('state', data => {
     if (data.state?.session?.active) { state = data.state; applyState(); }
   });
 
-  // PRIMARY delivery: fires the instant background calls persist(), which
-  // happens inside SESSION_CONFIRMED when roomId is first confirmed.
+  // Path 2: runtime message (also handles case where storage read missed roomId)
+  chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
+    if (res?.session?.active) { state = res; applyState(); }
+  });
+
+  // Path 3: storage onChanged — fires the instant background calls persist()
   chrome.storage.onChanged.addListener((changes, area) => {
     const want = chrome.storage['session'] ? 'session' : 'local';
     if (area !== want || !changes.state?.newValue) return;
     const s = changes.state.newValue;
     if (s?.session?.active) { state = s; applyState(); }
   });
+
+  // Path 4: polling fallback — catches anything the other paths miss
+  const _bgPoll = setInterval(() => {
+    if (state.session?.roomId) { clearInterval(_bgPoll); return; }
+    chrome.runtime.sendMessage({ type: 'GET_STATE' }, r => {
+      if (r?.session?.roomId) { state = r; applyState(); clearInterval(_bgPoll); }
+    });
+  }, 500);
+  setTimeout(() => clearInterval(_bgPoll), 30000);
 
   function applyState() {
     const s = state.session;
