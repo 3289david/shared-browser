@@ -26,9 +26,8 @@ function uid() { return crypto.randomBytes(4).toString('hex'); }
 
 function genRoomId() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  const arr = new Uint8Array(6);
-  crypto.getRandomValues(arr);
-  return Array.from(arr, b => chars[b % chars.length]).join('');
+  const bytes = crypto.randomBytes(6);
+  return Array.from(bytes, b => chars[b % chars.length]).join('');
 }
 
 function send(ws, type, data = {}) {

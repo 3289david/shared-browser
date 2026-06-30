@@ -41,29 +41,21 @@
   const annCount    = $('ann-count');
 
   // ── Init ──────────────────────────────────────────────────────────────────
-  chrome.runtime.sendMessage({ type: 'GET_STATE' }, res => {
-    if (res) state = res;
-    applyState();
+  // Read directly from storage — background persist() writes here on every
+  // state change, so this works without needing the service worker alive.
+  const _store = chrome.storage['session'] ?? chrome.storage.local;
+  _store.get('state', data => {
+    if (data.state?.session?.active) { state = data.state; applyState(); }
   });
 
-  // Backup 1: storage event — content.js writes _sbRoomId when roomId arrives.
-  // chrome.storage.onChanged fires reliably in extension pages regardless of
-  // postMessage timing, so this is the most reliable delivery path.
+  // PRIMARY delivery: fires the instant background calls persist(), which
+  // happens inside SESSION_CONFIRMED when roomId is first confirmed.
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local' || !changes._sbRoomId?.newValue) return;
-    chrome.runtime.sendMessage({ type: 'GET_STATE' }, r => {
-      if (r?.session?.active) { state = r; applyState(); }
-    });
+    const want = chrome.storage['session'] ? 'session' : 'local';
+    if (area !== want || !changes.state?.newValue) return;
+    const s = changes.state.newValue;
+    if (s?.session?.active) { state = s; applyState(); }
   });
-
-  // Backup 2: poll background directly every 500ms until roomId arrives
-  const _bgPoll = setInterval(() => {
-    if (state.session?.roomId) { clearInterval(_bgPoll); return; }
-    chrome.runtime.sendMessage({ type: 'GET_STATE' }, r => {
-      if (r?.session?.roomId) { state = r; applyState(); clearInterval(_bgPoll); }
-    });
-  }, 500);
-  setTimeout(() => clearInterval(_bgPoll), 30000);
 
   function applyState() {
     const s = state.session;
