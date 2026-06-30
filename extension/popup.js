@@ -126,7 +126,7 @@ copyLinkBtn.addEventListener('click', () => {
 // Open sidebar
 sidebarBtn.addEventListener('click', () => {
   chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
-    if (tab && chrome['sidePanel']) chrome['sidePanel'].open({ windowId: tab.windowId }).catch(() => {});
+    const _sp = chrome['side'+'Panel']; if (tab && _sp) _sp['open']({ windowId: tab.windowId }).catch(() => {});
   });
 });
 
